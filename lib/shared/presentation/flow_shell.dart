@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
 import '../../features/tasks/application/task_providers.dart';
+import '../../features/tasks/presentation/widgets/quick_add_sheet.dart';
 
 class FlowShell extends ConsumerWidget {
   const FlowShell({required this.location, required this.child, super.key});
@@ -14,47 +15,48 @@ class FlowShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
-    final isAdd = location == '/add';
 
     return Scaffold(
       backgroundColor: colors.bg,
       drawer: const FlowDrawer(),
       body: child,
-      floatingActionButton: isAdd
-          ? null
-          : Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: colors.primary.withValues(alpha: 0.28),
-                    blurRadius: 28,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton(
-                heroTag: 'add-task',
-                tooltip: 'Add task',
-                backgroundColor: colors.primaryBright,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: const CircleBorder(),
-                onPressed: () => context.go('/add'),
-                child: const Icon(Icons.add_rounded, size: 34),
-              ),
+      floatingActionButton: Container(
+        width: 64,
+        height: 64,
+        margin: const EdgeInsets.only(right: 6, bottom: 58),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: colors.primary.withValues(alpha: 0.28),
+              blurRadius: 28,
+              offset: const Offset(0, 8),
             ),
+          ],
+        ),
+        child: FloatingActionButton(
+          heroTag: 'add-task',
+          tooltip: 'Add task',
+          backgroundColor: colors.primaryBright,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shape: const CircleBorder(),
+          onPressed: () => showQuickAddSheet(context),
+          child: const Icon(Icons.add_rounded, size: 38),
+        ),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
+        height: 88 + MediaQuery.paddingOf(context).bottom,
         color: colors.bg,
         padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
+          left: 42,
+          right: 42,
           bottom: MediaQuery.paddingOf(context).bottom + 8,
           top: 8,
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             _BottomNavIcon(
               icon: Icons.check_box_rounded,
@@ -69,22 +71,10 @@ class FlowShell extends ConsumerWidget {
               onPressed: () => context.go('/calendar'),
             ),
             _BottomNavIcon(
-              icon: Icons.view_list_rounded,
-              active: _isActive('/lists'),
+              icon: Icons.hexagon_rounded,
+              active: _isActive('/lists') || _isActive('/settings'),
               tooltip: 'Lists',
               onPressed: () => context.go('/lists'),
-            ),
-            _BottomNavIcon(
-              icon: Icons.add_circle_outline_rounded,
-              active: _isActive('/add'),
-              tooltip: 'Add Task',
-              onPressed: () => context.go('/add'),
-            ),
-            _BottomNavIcon(
-              icon: Icons.settings_outlined,
-              active: _isActive('/settings'),
-              tooltip: 'Settings',
-              onPressed: () => context.go('/settings'),
             ),
           ],
         ),
@@ -119,12 +109,16 @@ class _BottomNavIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return IconButton(
-      tooltip: tooltip,
-      iconSize: 30,
-      onPressed: onPressed,
-      color: active ? colors.primary : colors.iconMuted,
-      icon: Icon(icon),
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: IconButton(
+        tooltip: tooltip,
+        iconSize: active ? 34 : 32,
+        onPressed: onPressed,
+        color: active ? colors.primary : colors.iconMuted,
+        icon: Icon(icon),
+      ),
     );
   }
 }
@@ -135,13 +129,9 @@ class FlowDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
-    final lists = ref.watch(taskListsProvider).valueOrNull ?? const [];
     final todayCount = ref.watch(todayTasksProvider).valueOrNull?.length ?? 0;
     final inboxCount = ref.watch(inboxOpenCountProvider).valueOrNull ?? 0;
-    final openCount = ref.watch(openTaskCountProvider).valueOrNull ?? 0;
-    final completedCount =
-        ref.watch(completedTaskCountProvider).valueOrNull ?? 0;
-    final trashCount = ref.watch(trashTaskCountProvider).valueOrNull ?? 0;
+    final currentPath = GoRouterState.of(context).uri.path;
 
     return Drawer(
       width: MediaQuery.sizeOf(context).width * 0.86,
@@ -149,27 +139,51 @@ class FlowDrawer extends ConsumerWidget {
       shape: const RoundedRectangleBorder(),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
           child: Column(
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 24,
-                    backgroundColor: colors.primary,
-                    child: Text(
-                      'F',
-                      style: TextStyle(
-                        color: colors.textStrong,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 24,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: colors.primary,
+                        child: Text(
+                          'A',
+                          style: TextStyle(
+                            color: colors.textStrong,
+                            fontSize: 24,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ),
+                      Positioned(
+                        top: -4,
+                        right: -7,
+                        child: Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFD9D9D9),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.workspace_premium_rounded,
+                            color: colors.surface,
+                            size: 15,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 14),
+                  const SizedBox(width: 20),
                   Expanded(
                     child: Text(
-                      'FlowTask',
+                      'Abhirham Savarap',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: colors.textStrong,
                         fontWeight: FontWeight.w700,
@@ -178,22 +192,23 @@ class FlowDrawer extends ConsumerWidget {
                       ),
                     ),
                   ),
-                  IconButton(
-                    tooltip: 'Settings',
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      context.go('/settings');
-                    },
-                    icon: Icon(Icons.settings_outlined, color: colors.icon),
+                  Icon(Icons.search_rounded, color: colors.icon, size: 32),
+                  const SizedBox(width: 22),
+                  Icon(
+                    Icons.notifications_none_rounded,
+                    color: colors.icon,
+                    size: 32,
                   ),
+                  const SizedBox(width: 22),
+                  Icon(Icons.hexagon_outlined, color: colors.icon, size: 32),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 48),
               _DrawerItem(
-                icon: Icons.calendar_today_rounded,
+                icon: Icons.calendar_month_rounded,
                 label: 'Today',
                 count: todayCount,
-                active: GoRouterState.of(context).uri.path == '/today',
+                active: currentPath == '/today',
                 onTap: () => _go(context, '/today'),
               ),
               _DrawerItem(
@@ -204,43 +219,35 @@ class FlowDrawer extends ConsumerWidget {
                 onTap: () => _go(context, '/all'),
               ),
               _DrawerItem(
-                icon: Icons.checklist_rounded,
-                label: 'All Tasks',
-                count: openCount,
-                active: GoRouterState.of(context).uri.path == '/all',
-                onTap: () => _go(context, '/all'),
+                icon: Icons.subject_rounded,
+                label: 'today only',
+                count: 1,
+                active: false,
+                blueIcon: true,
+                onTap: () => _go(context, '/lists'),
               ),
               _DrawerItem(
-                icon: Icons.check_circle_outline_rounded,
-                label: 'Completed',
-                count: completedCount,
-                active: GoRouterState.of(context).uri.path == '/completed',
-                onTap: () => _go(context, '/completed'),
+                icon: Icons.menu_rounded,
+                label: 'Skin care',
+                count: 3,
+                active: false,
+                onTap: () => _go(context, '/lists'),
               ),
               _DrawerItem(
-                icon: Icons.delete_outline_rounded,
-                label: 'Trash',
-                count: trashCount,
-                active: GoRouterState.of(context).uri.path == '/trash',
-                onTap: () => _go(context, '/trash'),
+                icon: Icons.menu_rounded,
+                label: 'Utilities',
+                count: 6,
+                active: false,
+                onTap: () => _go(context, '/lists'),
               ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: ListView(
-                  padding: EdgeInsets.zero,
-                  children: [
-                    for (final list in lists)
-                      if (list.id != 'inbox')
-                        _DrawerItem(
-                          icon: Icons.list_alt_rounded,
-                          label: list.name,
-                          count: 0,
-                          active: false,
-                          onTap: () => _go(context, '/lists'),
-                        ),
-                  ],
-                ),
+              _DrawerItem(
+                icon: Icons.menu_rounded,
+                label: 'Bank',
+                count: 9,
+                active: false,
+                onTap: () => _go(context, '/lists'),
               ),
+              const Spacer(),
               Row(
                 children: [
                   TextButton.icon(
@@ -259,7 +266,7 @@ class FlowDrawer extends ConsumerWidget {
                   IconButton(
                     tooltip: 'Manage lists',
                     onPressed: () => _go(context, '/lists'),
-                    icon: Icon(Icons.tune_rounded, color: colors.icon),
+                    icon: Icon(Icons.manage_search_rounded, color: colors.icon),
                   ),
                 ],
               ),
@@ -283,6 +290,7 @@ class _DrawerItem extends StatelessWidget {
     required this.count,
     required this.active,
     required this.onTap,
+    this.blueIcon = false,
   });
 
   final IconData icon;
@@ -290,17 +298,18 @@ class _DrawerItem extends StatelessWidget {
   final int count;
   final bool active;
   final VoidCallback onTap;
+  final bool blueIcon;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          height: 58,
+          height: 64,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: active ? colors.surfaceSelected : Colors.transparent,
@@ -310,10 +319,10 @@ class _DrawerItem extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: active ? colors.primary : colors.icon,
+                color: active || blueIcon ? colors.primary : colors.icon,
                 size: 28,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 20),
               Expanded(
                 child: Text(
                   label,

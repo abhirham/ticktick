@@ -38,6 +38,24 @@ class TaskRepository {
     return query.watch();
   }
 
+  Stream<List<TaskItem>> watchOverdueTasks({required DateTime today}) {
+    final day = dateOnly(today);
+    final query = _db.select(_db.taskItems)
+      ..where(
+        (task) =>
+            task.status.equals(TaskStatus.open.value) &
+            task.deletedAt.isNull() &
+            task.dueDate.isSmallerThanValue(day),
+      )
+      ..orderBy([
+        (task) => OrderingTerm.asc(task.dueDate),
+        (task) => OrderingTerm.asc(task.sortOrder),
+        (task) => OrderingTerm.asc(task.createdAt),
+      ]);
+
+    return query.watch();
+  }
+
   Stream<List<TaskItem>> watchAllOpenTasks() {
     final query = _db.select(_db.taskItems)
       ..where(

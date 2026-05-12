@@ -10,6 +10,11 @@ final todayTasksProvider = StreamProvider<List<TaskItem>>((ref) {
   return ref.watch(taskRepositoryProvider).watchTodayTasks(today: today);
 });
 
+final overdueTasksProvider = StreamProvider<List<TaskItem>>((ref) {
+  final today = ref.watch(todayDateProvider);
+  return ref.watch(taskRepositoryProvider).watchOverdueTasks(today: today);
+});
+
 final allOpenTasksProvider = StreamProvider<List<TaskItem>>((ref) {
   return ref.watch(taskRepositoryProvider).watchAllOpenTasks();
 });

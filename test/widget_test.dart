@@ -14,6 +14,9 @@ void main() {
           todayTasksProvider.overrideWith(
             (ref) => Stream.value(const <TaskItem>[]),
           ),
+          overdueTasksProvider.overrideWith(
+            (ref) => Stream.value(const <TaskItem>[]),
+          ),
           completedTasksProvider.overrideWith(
             (ref) => Stream.value(const <TaskItem>[]),
           ),
@@ -31,7 +34,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Today'), findsWidgets);
-    expect(find.text('Add a task for today'), findsOneWidget);
     expect(find.byIcon(Icons.add_rounded), findsWidgets);
+
+    await tester.tap(find.byIcon(Icons.add_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.text('What would you like to do?'), findsOneWidget);
   });
 }

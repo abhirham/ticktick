@@ -23,13 +23,13 @@ class FlowTaskPageHeader extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: SizedBox(
-        height: 88,
+        height: 96,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 18),
           child: Row(
             children: [
               leading ?? const SizedBox(width: 48),
-              const SizedBox(width: 4),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   title,
@@ -72,7 +72,7 @@ class FlowIconButton extends StatelessWidget {
     return IconButton(
       tooltip: tooltip,
       onPressed: onPressed,
-      iconSize: 30,
+      iconSize: 32,
       color: isActive ? colors.primary : colors.icon,
       disabledColor: colors.textSubtle,
       icon: Icon(icon),
@@ -88,6 +88,9 @@ class TaskSectionCard extends StatelessWidget {
     required this.onTaskTap,
     required this.onToggleTask,
     this.trailing,
+    this.action,
+    this.showChevron = true,
+    this.showProjectMarkers = false,
     this.muted = false,
     super.key,
   });
@@ -98,6 +101,9 @@ class TaskSectionCard extends StatelessWidget {
   final ValueChanged<TaskItem> onTaskTap;
   final ValueChanged<TaskItem> onToggleTask;
   final Widget? trailing;
+  final Widget? action;
+  final bool showChevron;
+  final bool showProjectMarkers;
   final bool muted;
 
   @override
@@ -126,11 +132,10 @@ class TaskSectionCard extends StatelessWidget {
                   ),
                 ),
               ),
+              if (action != null) action!,
+              if (action != null) const SizedBox(width: 16),
               trailing ??
-                  Text(
-                    '${tasks.length}',
-                    style: TextStyle(color: colors.textMuted, fontSize: 22),
-                  ),
+                  _HeaderCount(count: tasks.length, chevron: showChevron),
             ],
           ),
           if (tasks.isEmpty)
@@ -147,20 +152,68 @@ class TaskSectionCard extends StatelessWidget {
             )
           else
             Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Column(
+              padding: const EdgeInsets.only(top: 24),
+              child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  for (final task in tasks)
-                    TaskRow(
-                      task: task,
-                      muted: muted,
-                      onTap: () => onTaskTap(task),
-                      onToggle: () => onToggleTask(task),
+                  if (showProjectMarkers && tasks.length > 2)
+                    const Positioned(
+                      left: -16,
+                      top: 150,
+                      child: _ProjectMarker(height: 48),
                     ),
+                  if (showProjectMarkers && tasks.length > 4)
+                    const Positioned(
+                      left: -16,
+                      top: 304,
+                      child: _ProjectMarker(height: 48),
+                    ),
+                  if (showProjectMarkers && tasks.length > 6)
+                    const Positioned(
+                      left: -16,
+                      bottom: 0,
+                      child: _ProjectMarker(height: 48),
+                    ),
+                  Column(
+                    children: [
+                      for (final task in tasks)
+                        TaskRow(
+                          task: task,
+                          muted: muted,
+                          onTap: () => onTaskTap(task),
+                          onToggle: () => onToggleTask(task),
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class SectionTextAction extends StatelessWidget {
+  const SectionTextAction({required this.label, this.onPressed, super.key});
+
+  final String label;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        foregroundColor: colors.primary,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        minimumSize: const Size(0, 40),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -183,7 +236,6 @@ class TaskRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    final priority = TaskPriority.fromValue(task.priority);
     final isCompleted =
         TaskStatus.fromValue(task.status) == TaskStatus.completed;
     final metadata = _metadataLabel(task, DateTime.now());
@@ -195,7 +247,7 @@ class TaskRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 68),
+          constraints: const BoxConstraints(minHeight: 77),
           child: Row(
             children: [
               TaskCheckBox(
@@ -205,49 +257,61 @@ class TaskRow extends StatelessWidget {
               ),
               const SizedBox(width: 18),
               Expanded(
-                child: Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        task.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: muted || isCompleted
-                              ? colors.textSubtle
-                              : colors.text,
-                          fontSize: 25,
-                          fontWeight: FontWeight.w400,
-                          height: 1.28,
-                        ),
-                      ),
-                    ),
-                    if (task.isPersistent) ...[
-                      const SizedBox(width: 8),
-                      _TaskBadge(label: 'Stays Today'),
-                    ],
-                    if (priority != TaskPriority.none) ...[
-                      const SizedBox(width: 8),
-                      _PriorityDot(priority: priority),
-                    ],
-                  ],
+                child: Text(
+                  task.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: muted || isCompleted
+                        ? colors.textSubtle
+                        : colors.text,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w400,
+                    height: 1.28,
+                  ),
                 ),
               ),
               if (metadata != null) ...[
                 const SizedBox(width: 12),
                 SizedBox(
-                  width: 92,
-                  child: Text(
-                    metadata.label,
-                    textAlign: TextAlign.right,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: muted ? colors.textSubtle : metadata.color(colors),
-                      fontSize: 19,
-                      fontWeight: FontWeight.w500,
-                      height: 1.2,
-                    ),
+                  width: 112,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        metadata.label,
+                        textAlign: TextAlign.right,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: muted
+                              ? colors.textSubtle
+                              : metadata.color(colors),
+                          fontSize: 20,
+                          fontWeight: FontWeight.w500,
+                          height: 1.2,
+                        ),
+                      ),
+                      if (task.recurrenceRuleId != null) ...[
+                        const SizedBox(height: 5),
+                        Icon(
+                          Icons.repeat_rounded,
+                          color: colors.textSubtle,
+                          size: 21,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ] else if (task.recurrenceRuleId != null) ...[
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 36,
+                  child: Icon(
+                    Icons.repeat_rounded,
+                    color: colors.textSubtle,
+                    size: 21,
                   ),
                 ),
               ],
@@ -260,13 +324,16 @@ class TaskRow extends StatelessWidget {
 
   _TaskMetadata? _metadataLabel(TaskItem task, DateTime now) {
     if (task.dueTime != null && task.dueDate != null) {
-      return _TaskMetadata(task.dueTime!, (colors) => colors.primary);
+      return _TaskMetadata(
+        timeLabel(task.dueTime!),
+        (colors) => colors.primary,
+      );
     }
     if (task.dueDate == null) {
       return null;
     }
     final dueDate = task.dueDate!;
-    final label = compactDateLabel(dueDate, now);
+    final label = taskListDateLabel(dueDate, now);
     final isOverdue = dateOnly(dueDate).isBefore(dateOnly(now));
     return _TaskMetadata(label, (colors) {
       return isOverdue ? colors.danger : colors.textMuted;
@@ -292,8 +359,8 @@ class TaskCheckBox extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 26,
-        height: 26,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
           color: checked ? colors.textSubtle : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
@@ -303,56 +370,53 @@ class TaskCheckBox extends StatelessWidget {
           ),
         ),
         child: checked
-            ? Icon(Icons.check_rounded, size: 20, color: colors.surface)
+            ? Icon(Icons.check_rounded, size: 21, color: colors.surface)
             : null,
       ),
     );
   }
 }
 
-class _TaskBadge extends StatelessWidget {
-  const _TaskBadge({required this.label});
+class _HeaderCount extends StatelessWidget {
+  const _HeaderCount({required this.count, required this.chevron});
 
-  final String label;
+  final int count;
+  final bool chevron;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: colors.surfaceSelected,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: colors.primary,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('$count', style: TextStyle(color: colors.textMuted, fontSize: 22)),
+        if (chevron) ...[
+          const SizedBox(width: 6),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: colors.textMuted,
+            size: 30,
+          ),
+        ],
+      ],
     );
   }
 }
 
-class _PriorityDot extends StatelessWidget {
-  const _PriorityDot({required this.priority});
+class _ProjectMarker extends StatelessWidget {
+  const _ProjectMarker({required this.height});
 
-  final TaskPriority priority;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (priority) {
-      TaskPriority.high => context.colors.danger,
-      TaskPriority.medium => context.colors.primary,
-      TaskPriority.low => context.colors.textMuted,
-      TaskPriority.none => Colors.transparent,
-    };
     return Container(
-      width: 8,
-      height: 8,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      width: 3,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFF55A8FF),
+        borderRadius: BorderRadius.circular(4),
+      ),
     );
   }
 }
