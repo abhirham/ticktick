@@ -4,6 +4,7 @@
 
 - Spin up multiple agents when necessary to parallelize investigation, implementation, or verification work.
 - Commit all checkpoints as work progresses, using clear commit messages for each checkpoint.
+- Push committed code to the configured remote when deemed necessary to share progress, preserve important checkpoints, or keep collaborators in sync.
 
 ## UI Implementation
 
