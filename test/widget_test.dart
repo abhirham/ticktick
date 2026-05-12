@@ -1,30 +1,37 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flowtask/main.dart';
+import 'package:flowtask/app/flowtask_app.dart';
+import 'package:flowtask/data/local/app_database.dart';
+import 'package:flowtask/features/tasks/application/task_providers.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('FlowTask launches to Today', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          todayTasksProvider.overrideWith(
+            (ref) => Stream.value(const <TaskItem>[]),
+          ),
+          completedTasksProvider.overrideWith(
+            (ref) => Stream.value(const <TaskItem>[]),
+          ),
+          taskListsProvider.overrideWith(
+            (ref) => Stream.value(const <TaskList>[]),
+          ),
+          inboxOpenCountProvider.overrideWith((ref) => Stream.value(0)),
+          openTaskCountProvider.overrideWith((ref) => Stream.value(0)),
+          completedTaskCountProvider.overrideWith((ref) => Stream.value(0)),
+          trashTaskCountProvider.overrideWith((ref) => Stream.value(0)),
+        ],
+        child: const FlowTaskApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Today'), findsWidgets);
+    expect(find.text('Add a task for today'), findsOneWidget);
+    expect(find.byIcon(Icons.add_rounded), findsWidgets);
   });
 }

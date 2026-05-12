@@ -1,0 +1,365 @@
+import 'package:flutter/material.dart';
+
+import '../../../../app/theme.dart';
+import '../../../../core/time/flow_date_utils.dart';
+import '../../../../data/local/app_database.dart';
+import '../../domain/task_enums.dart';
+
+class FlowTaskPageHeader extends StatelessWidget {
+  const FlowTaskPageHeader({
+    required this.title,
+    this.leading,
+    this.actions = const [],
+    super.key,
+  });
+
+  final String title;
+  final Widget? leading;
+  final List<Widget> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return SafeArea(
+      bottom: false,
+      child: SizedBox(
+        height: 88,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              leading ?? const SizedBox(width: 48),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: colors.textStrong,
+                    fontSize: 32,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+              ...actions,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class FlowIconButton extends StatelessWidget {
+  const FlowIconButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.isActive = false,
+    super.key,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return IconButton(
+      tooltip: tooltip,
+      onPressed: onPressed,
+      iconSize: 30,
+      color: isActive ? colors.primary : colors.icon,
+      disabledColor: colors.textSubtle,
+      icon: Icon(icon),
+    );
+  }
+}
+
+class TaskSectionCard extends StatelessWidget {
+  const TaskSectionCard({
+    required this.title,
+    required this.tasks,
+    required this.emptyText,
+    required this.onTaskTap,
+    required this.onToggleTask,
+    this.trailing,
+    this.muted = false,
+    super.key,
+  });
+
+  final String title;
+  final List<TaskItem> tasks;
+  final String emptyText;
+  final ValueChanged<TaskItem> onTaskTap;
+  final ValueChanged<TaskItem> onToggleTask;
+  final Widget? trailing;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: muted ? colors.textSubtle : colors.text,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+              trailing ??
+                  Text(
+                    '${tasks.length}',
+                    style: TextStyle(color: colors.textMuted, fontSize: 22),
+                  ),
+            ],
+          ),
+          if (tasks.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 20),
+              child: Text(
+                emptyText,
+                style: TextStyle(
+                  color: colors.textMuted,
+                  fontSize: 20,
+                  height: 1.3,
+                ),
+              ),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Column(
+                children: [
+                  for (final task in tasks)
+                    TaskRow(
+                      task: task,
+                      muted: muted,
+                      onTap: () => onTaskTap(task),
+                      onToggle: () => onToggleTask(task),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class TaskRow extends StatelessWidget {
+  const TaskRow({
+    required this.task,
+    required this.onTap,
+    required this.onToggle,
+    this.muted = false,
+    super.key,
+  });
+
+  final TaskItem task;
+  final VoidCallback onTap;
+  final VoidCallback onToggle;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final priority = TaskPriority.fromValue(task.priority);
+    final isCompleted =
+        TaskStatus.fromValue(task.status) == TaskStatus.completed;
+    final metadata = _metadataLabel(task, DateTime.now());
+
+    return Semantics(
+      button: true,
+      label: task.title,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 68),
+          child: Row(
+            children: [
+              TaskCheckBox(
+                checked: isCompleted,
+                onTap: onToggle,
+                muted: muted || isCompleted,
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        task.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: muted || isCompleted
+                              ? colors.textSubtle
+                              : colors.text,
+                          fontSize: 25,
+                          fontWeight: FontWeight.w400,
+                          height: 1.28,
+                        ),
+                      ),
+                    ),
+                    if (task.isPersistent) ...[
+                      const SizedBox(width: 8),
+                      _TaskBadge(label: 'Stays Today'),
+                    ],
+                    if (priority != TaskPriority.none) ...[
+                      const SizedBox(width: 8),
+                      _PriorityDot(priority: priority),
+                    ],
+                  ],
+                ),
+              ),
+              if (metadata != null) ...[
+                const SizedBox(width: 12),
+                SizedBox(
+                  width: 92,
+                  child: Text(
+                    metadata.label,
+                    textAlign: TextAlign.right,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: muted ? colors.textSubtle : metadata.color(colors),
+                      fontSize: 19,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  _TaskMetadata? _metadataLabel(TaskItem task, DateTime now) {
+    if (task.dueTime != null && task.dueDate != null) {
+      return _TaskMetadata(task.dueTime!, (colors) => colors.primary);
+    }
+    if (task.dueDate == null) {
+      return null;
+    }
+    final dueDate = task.dueDate!;
+    final label = compactDateLabel(dueDate, now);
+    final isOverdue = dateOnly(dueDate).isBefore(dateOnly(now));
+    return _TaskMetadata(label, (colors) {
+      return isOverdue ? colors.danger : colors.textMuted;
+    });
+  }
+}
+
+class TaskCheckBox extends StatelessWidget {
+  const TaskCheckBox({
+    required this.checked,
+    required this.onTap,
+    this.muted = false,
+    super.key,
+  });
+
+  final bool checked;
+  final VoidCallback onTap;
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 26,
+        height: 26,
+        decoration: BoxDecoration(
+          color: checked ? colors.textSubtle : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: checked || muted ? colors.textSubtle : colors.border,
+            width: 2,
+          ),
+        ),
+        child: checked
+            ? Icon(Icons.check_rounded, size: 20, color: colors.surface)
+            : null,
+      ),
+    );
+  }
+}
+
+class _TaskBadge extends StatelessWidget {
+  const _TaskBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: colors.surfaceSelected,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: colors.primary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _PriorityDot extends StatelessWidget {
+  const _PriorityDot({required this.priority});
+
+  final TaskPriority priority;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (priority) {
+      TaskPriority.high => context.colors.danger,
+      TaskPriority.medium => context.colors.primary,
+      TaskPriority.low => context.colors.textMuted,
+      TaskPriority.none => Colors.transparent,
+    };
+    return Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    );
+  }
+}
+
+class _TaskMetadata {
+  const _TaskMetadata(this.label, this.color);
+
+  final String label;
+  final Color Function(FlowTaskColors colors) color;
+}
