@@ -49,12 +49,12 @@
 ## Repeating Tasks
 
 - [ ] Finish recurrence editor UI.
-- [ ] [in progress: codex/repeat-worker] Implement next occurrence generation when a repeating task is completed.
-- [ ] [in progress: codex/repeat-worker] Prevent duplicate future occurrences.
+- [x] Implement next occurrence generation when a repeating task is completed.
+- [x] Prevent duplicate future occurrences.
 - [ ] Support daily, weekly, monthly, yearly, custom intervals, weekdays, weekends, selected weekdays, last Friday, and every other Saturday.
 - [ ] Implement overdue repeating behavior setting.
-- [ ] [in progress: codex/repeat-worker] Verify persistent plus repeating tasks do not duplicate.
-- [ ] [in progress: codex/repeat-worker] Add recurrence engine tests for all supported patterns.
+- [x] Verify persistent plus repeating tasks do not duplicate.
+- [x] Add recurrence engine tests for all supported patterns.
 
 ## Reminders And Notifications
 

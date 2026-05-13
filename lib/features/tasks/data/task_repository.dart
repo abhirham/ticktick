@@ -402,16 +402,30 @@ class TaskRepository {
 
   Future<void> completeTask(String id) async {
     final now = _now();
-    await (_db.update(
-      _db.taskItems,
-    )..where((task) => task.id.equals(id))).write(
-      TaskItemsCompanion(
-        status: Value(TaskStatus.completed.value),
-        completedAt: Value(now),
-        persistentCompletedAt: Value(now),
-        updatedAt: Value(now),
-      ),
-    );
+    await _db.transaction(() async {
+      final task = await _taskById(id);
+      if (task == null) {
+        return;
+      }
+
+      final wasCompleted =
+          TaskStatus.fromValue(task.status) == TaskStatus.completed;
+
+      await (_db.update(
+        _db.taskItems,
+      )..where((task) => task.id.equals(id))).write(
+        TaskItemsCompanion(
+          status: Value(TaskStatus.completed.value),
+          completedAt: Value(now),
+          persistentCompletedAt: Value(now),
+          updatedAt: Value(now),
+        ),
+      );
+
+      if (!wasCompleted) {
+        await _createOrReuseNextOccurrence(task, now);
+      }
+    });
   }
 
   Future<void> reopenTask(String id) async {
@@ -536,6 +550,329 @@ class TaskRepository {
     final query = _db.select(_db.taskItems)
       ..where((task) => task.id.equals(id));
     return query.getSingleOrNull();
+  }
+
+  Future<RecurrenceRuleEntry?> _repeatRuleById(String id) {
+    final query = _db.select(_db.recurrenceRuleEntries)
+      ..where((rule) => rule.id.equals(id));
+    return query.getSingleOrNull();
+  }
+
+  Future<void> _createOrReuseNextOccurrence(
+    TaskItem completedTask,
+    DateTime now,
+  ) async {
+    final recurrenceRuleId = completedTask.recurrenceRuleId;
+    if (recurrenceRuleId == null) {
+      return;
+    }
+
+    final rule = await _repeatRuleById(recurrenceRuleId);
+    if (rule == null) {
+      return;
+    }
+
+    final parentTaskId =
+        completedTask.recurrenceParentTaskId ?? completedTask.id;
+    final rootTask = completedTask.recurrenceParentTaskId == null
+        ? completedTask
+        : await _taskById(parentTaskId);
+    final anchorDate = _taskOccurrenceDate(rootTask ?? completedTask, now);
+    final currentDate = _taskOccurrenceDate(completedTask, now);
+    final nextDate = _nextOccurrenceDate(
+      rule,
+      currentDate: currentDate,
+      anchorDate: anchorDate,
+    );
+    if (nextDate == null || !_allowsOccurrenceDate(rule, nextDate)) {
+      return;
+    }
+
+    final existingOccurrence = await _openOccurrenceForDate(
+      recurrenceRuleId: recurrenceRuleId,
+      parentTaskId: parentTaskId,
+      occurrenceDate: nextDate,
+    );
+    if (existingOccurrence != null) {
+      return;
+    }
+
+    final occurrenceCount = await _seriesOccurrenceCount(
+      recurrenceRuleId: recurrenceRuleId,
+      parentTaskId: parentTaskId,
+    );
+    if (!_allowsOccurrenceCount(rule, occurrenceCount)) {
+      return;
+    }
+
+    await _insertNextOccurrence(
+      source: completedTask,
+      parentTaskId: parentTaskId,
+      recurrenceRuleId: recurrenceRuleId,
+      currentDate: currentDate,
+      nextDate: nextDate,
+      now: now,
+    );
+  }
+
+  Future<TaskItem?> _openOccurrenceForDate({
+    required String recurrenceRuleId,
+    required String parentTaskId,
+    required DateTime occurrenceDate,
+  }) async {
+    final query = _db.select(_db.taskItems)
+      ..where(
+        (task) =>
+            task.status.equals(TaskStatus.open.value) &
+            task.deletedAt.isNull() &
+            task.recurrenceRuleId.equals(recurrenceRuleId) &
+            task.recurrenceParentTaskId.equals(parentTaskId) &
+            task.recurrenceOccurrenceDate.equals(occurrenceDate),
+      )
+      ..orderBy([(task) => OrderingTerm.asc(task.createdAt)])
+      ..limit(1);
+    final occurrences = await query.get();
+    return occurrences.firstOrNull;
+  }
+
+  Future<int> _seriesOccurrenceCount({
+    required String recurrenceRuleId,
+    required String parentTaskId,
+  }) async {
+    final count = _db.taskItems.id.count();
+    final sameSeries =
+        _db.taskItems.id.equals(parentTaskId) |
+        _db.taskItems.recurrenceParentTaskId.equals(parentTaskId);
+    final query = _db.selectOnly(_db.taskItems)
+      ..addColumns([count])
+      ..where(
+        _db.taskItems.recurrenceRuleId.equals(recurrenceRuleId) & sameSeries,
+      );
+    final row = await query.getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  Future<void> _insertNextOccurrence({
+    required TaskItem source,
+    required String parentTaskId,
+    required String recurrenceRuleId,
+    required DateTime currentDate,
+    required DateTime nextDate,
+    required DateTime now,
+  }) async {
+    final id = _uuid.v4();
+    final keepPersistent =
+        source.isPersistent || source.showInTodayUntilComplete;
+    final dayDelta = nextDate.difference(currentDate).inDays;
+
+    await _db
+        .into(_db.taskItems)
+        .insert(
+          TaskItemsCompanion.insert(
+            id: id,
+            title: source.title,
+            description: Value(source.description),
+            status: Value(TaskStatus.open.value),
+            priority: Value(source.priority),
+            listId: source.listId,
+            groupId: Value(source.groupId),
+            createdAt: now,
+            updatedAt: now,
+            dueDate: Value(nextDate),
+            dueTime: Value(source.dueTime),
+            startDate: Value(_shiftDate(source.startDate, dayDelta)),
+            startTime: Value(source.startTime),
+            timeZone: source.timeZone,
+            isAllDay: Value(source.isAllDay),
+            isPersistent: Value(keepPersistent),
+            showInTodayUntilComplete: Value(keepPersistent),
+            persistentStartedAt: Value(keepPersistent ? now : null),
+            recurrenceRuleId: Value(recurrenceRuleId),
+            recurrenceParentTaskId: Value(parentTaskId),
+            recurrenceOccurrenceDate: Value(nextDate),
+            originalInput: Value(source.originalInput),
+            sortOrder: Value(source.sortOrder),
+          ),
+        );
+
+    await _copyRemindersToOccurrence(
+      sourceTaskId: source.id,
+      targetTaskId: id,
+      dayDelta: dayDelta,
+      now: now,
+    );
+  }
+
+  Future<void> _copyRemindersToOccurrence({
+    required String sourceTaskId,
+    required String targetTaskId,
+    required int dayDelta,
+    required DateTime now,
+  }) async {
+    final query = _db.select(_db.reminderEntries)
+      ..where((reminder) => reminder.taskId.equals(sourceTaskId));
+    final reminders = await query.get();
+    if (reminders.isEmpty) {
+      return;
+    }
+
+    await _replaceReminders(targetTaskId, [
+      for (final reminder in reminders)
+        TaskReminderDraft(
+          remindAt: reminder.remindAt.add(Duration(days: dayDelta)),
+          reminderType: reminder.reminderType,
+          offsetMinutes: reminder.offsetMinutes,
+          isEnabled: reminder.isEnabled,
+        ),
+    ], now);
+  }
+
+  DateTime _taskOccurrenceDate(TaskItem task, DateTime fallback) {
+    return dateOnly(
+      task.recurrenceOccurrenceDate ??
+          task.dueDate ??
+          task.startDate ??
+          fallback,
+    );
+  }
+
+  DateTime? _nextOccurrenceDate(
+    RecurrenceRuleEntry rule, {
+    required DateTime currentDate,
+    required DateTime anchorDate,
+  }) {
+    final interval = rule.repeatInterval < 1 ? 1 : rule.repeatInterval;
+    final frequency = TaskRepeatFrequency.fromValue(rule.repeatFrequency);
+
+    return switch (frequency) {
+      TaskRepeatFrequency.daily => dateOnly(
+        currentDate.add(Duration(days: interval)),
+      ),
+      TaskRepeatFrequency.weekly => _nextWeeklyOccurrenceDate(
+        rule,
+        currentDate: currentDate,
+        anchorDate: anchorDate,
+        interval: interval,
+      ),
+      TaskRepeatFrequency.monthly => _addMonths(
+        currentDate,
+        interval,
+        day: rule.repeatMonthDay ?? anchorDate.day,
+      ),
+      TaskRepeatFrequency.yearly => _dateInMonth(
+        currentDate.year + interval,
+        anchorDate.month,
+        anchorDate.day,
+      ),
+    };
+  }
+
+  DateTime? _nextWeeklyOccurrenceDate(
+    RecurrenceRuleEntry rule, {
+    required DateTime currentDate,
+    required DateTime anchorDate,
+    required int interval,
+  }) {
+    final weekdays = _repeatWeekdays(rule, fallback: currentDate.weekday);
+    final anchorWeekStart = _weekStart(anchorDate);
+    final searchLimit = Duration(days: (interval * 7) + 7);
+    var candidate = dateOnly(currentDate).add(const Duration(days: 1));
+    final endSearch = dateOnly(currentDate).add(searchLimit);
+
+    while (!candidate.isAfter(endSearch)) {
+      final candidateWeekStart = _weekStart(candidate);
+      final weeksSinceAnchor =
+          candidateWeekStart.difference(anchorWeekStart).inDays ~/ 7;
+      if (weeksSinceAnchor >= 0 &&
+          weeksSinceAnchor % interval == 0 &&
+          weekdays.contains(candidate.weekday)) {
+        return candidate;
+      }
+      candidate = candidate.add(const Duration(days: 1));
+    }
+
+    return null;
+  }
+
+  List<int> _repeatWeekdays(RecurrenceRuleEntry rule, {required int fallback}) {
+    final parsed =
+        rule.repeatWeekdays
+            ?.split(',')
+            .map((weekday) => int.tryParse(weekday.trim()))
+            .whereType<int>()
+            .where(
+              (weekday) =>
+                  weekday >= DateTime.monday && weekday <= DateTime.sunday,
+            )
+            .toSet()
+            .toList()
+          ?..sort();
+    if (parsed == null || parsed.isEmpty) {
+      return [fallback];
+    }
+    return parsed;
+  }
+
+  bool _allowsOccurrenceDate(
+    RecurrenceRuleEntry rule,
+    DateTime occurrenceDate,
+  ) {
+    final endType = rule.repeatEndType.toLowerCase();
+    final endDate = rule.repeatEndDate == null
+        ? null
+        : dateOnly(rule.repeatEndDate!);
+    final usesEndDate =
+        endType == 'date' ||
+        endType == 'enddate' ||
+        endType == 'on' ||
+        endType == 'ondate' ||
+        endType == 'until';
+    if (usesEndDate && endDate != null && occurrenceDate.isAfter(endDate)) {
+      return false;
+    }
+    return true;
+  }
+
+  bool _allowsOccurrenceCount(RecurrenceRuleEntry rule, int existingCount) {
+    final endType = rule.repeatEndType.toLowerCase();
+    final usesCount =
+        endType == 'count' ||
+        endType == 'after' ||
+        endType == 'occurrences' ||
+        endType == 'afteroccurrences';
+    final occurrenceCount = rule.repeatOccurrenceCount;
+    if (usesCount &&
+        occurrenceCount != null &&
+        existingCount >= occurrenceCount) {
+      return false;
+    }
+    return true;
+  }
+
+  DateTime? _shiftDate(DateTime? date, int days) {
+    if (date == null) {
+      return null;
+    }
+    return dateOnly(date.add(Duration(days: days)));
+  }
+
+  DateTime _weekStart(DateTime date) {
+    return dateOnly(
+      date,
+    ).subtract(Duration(days: date.weekday - DateTime.monday));
+  }
+
+  DateTime _addMonths(DateTime date, int months, {required int day}) {
+    final monthIndex = (date.year * 12) + (date.month - 1) + months;
+    final year = monthIndex ~/ 12;
+    final month = (monthIndex % 12) + 1;
+    return _dateInMonth(year, month, day);
+  }
+
+  DateTime _dateInMonth(int year, int month, int day) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    final clampedDay = day < 1 ? 1 : (day > lastDay ? lastDay : day);
+    return DateTime(year, month, clampedDay);
   }
 
   Future<void> _replaceReminders(
