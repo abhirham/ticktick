@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../features/settings/application/settings_providers.dart';
 import 'router.dart';
 import 'theme.dart';
 
@@ -10,10 +11,11 @@ class FlowTaskApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(flowTaskThemeModeProvider);
     return MaterialApp.router(
       title: 'FlowTask',
       debugShowCheckedModeBanner: false,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       theme: buildFlowTaskTheme(Brightness.light),
       darkTheme: buildFlowTaskTheme(Brightness.dark),
       routerConfig: router,

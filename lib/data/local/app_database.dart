@@ -203,6 +203,24 @@ class AppDatabase extends _$AppDatabase {
     : super(executor ?? driftDatabase(name: 'flowtask'));
 
   static const inboxListId = 'inbox';
+  static const settingsDefaults = <String, (String, String)>{
+    'themeMode': ('system', 'string'),
+    'remindersEnabled': ('true', 'bool'),
+    'defaultReminderOffsetMinutes': ('0', 'int'),
+    'showOverdueTasksInToday': ('false', 'bool'),
+    'showPersistentTasksInToday': ('true', 'bool'),
+    'showCarriedForwardCount': ('true', 'bool'),
+    'persistentTaskPosition': ('afterScheduledTasks', 'string'),
+    'defaultListId': (inboxListId, 'string'),
+    'defaultGrouping': ('manualGroups', 'string'),
+    'defaultCalendarView': ('month', 'string'),
+    'firstDayOfWeek': ('system', 'string'),
+    'showCompletedTasksInCalendar': ('false', 'bool'),
+    'widgetDisplayMode': ('countOnly', 'string'),
+    'widgetShowsLockScreenTitles': ('false', 'bool'),
+    'widgetTapDestination': ('today', 'string'),
+    'repeatingOverdueBehavior': ('completeOverdueAndGenerateNext', 'string'),
+  };
 
   @override
   int get schemaVersion => 1;
@@ -235,31 +253,15 @@ class AppDatabase extends _$AppDatabase {
       ),
     );
 
-    final defaults = <String, (String, String)>{
-      'themeMode': ('system', 'string'),
-      'showOverdueTasksInToday': ('false', 'bool'),
-      'showPersistentTasksInToday': ('true', 'bool'),
-      'showCarriedForwardCount': ('true', 'bool'),
-      'persistentTaskPosition': ('afterScheduledTasks', 'string'),
-      'defaultListId': (inboxListId, 'string'),
-      'defaultGrouping': ('manualGroups', 'string'),
-      'defaultCalendarView': ('month', 'string'),
-      'firstDayOfWeek': ('system', 'string'),
-      'showCompletedTasksInCalendar': ('false', 'bool'),
-      'widgetDisplayMode': ('countOnly', 'string'),
-      'widgetShowsLockScreenTitles': ('false', 'bool'),
-      'widgetTapDestination': ('today', 'string'),
-      'repeatingOverdueBehavior': ('completeOverdueAndGenerateNext', 'string'),
-    };
-
-    for (final entry in defaults.entries) {
-      await into(settingsEntries).insertOnConflictUpdate(
+    for (final entry in settingsDefaults.entries) {
+      await into(settingsEntries).insert(
         SettingsEntriesCompanion.insert(
           key: entry.key,
           value: entry.value.$1,
           valueType: entry.value.$2,
           updatedAt: now,
         ),
+        mode: InsertMode.insertOrIgnore,
       );
     }
   }
