@@ -407,29 +407,28 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   }
 
   Future<void> _showReminderMenu() async {
-    final choice = await showTaskInputReminderChoiceSheet(context);
-    if (choice == null) {
+    final reminders = await showTaskReminderEditorSheet(
+      context,
+      initialReminders: _form.reminders,
+      dueDate: _form.dueDate,
+      dueTime: _form.dueTime,
+    );
+    if (reminders == null) {
       return;
     }
-    setState(() {
-      _form.setReminders(
-        taskInputRemindersForChoice(
-          choice,
-          dueDate: _form.dueDate,
-          dueTime: _form.dueTime,
-        ),
-      );
-    });
+    setState(() => _form.setReminders(reminders));
   }
 
   Future<void> _showRepeatMenu() async {
-    final choice = await showTaskInputRepeatChoiceSheet(context);
-    if (choice == null) {
+    final result = await showTaskRepeatEditorSheet(
+      context,
+      initialRule: _form.repeatRule,
+      dueDate: _form.dueDate,
+    );
+    if (result == null) {
       return;
     }
-    setState(() {
-      _form.setRepeat(taskInputRepeatForChoice(choice, dueDate: _form.dueDate));
-    });
+    setState(() => _form.setRepeat(result.repeatRule));
   }
 
   Future<void> _save() async {

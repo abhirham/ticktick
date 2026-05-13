@@ -60,6 +60,8 @@ class TaskRepeatDraft {
     this.interval = 1,
     this.weekdays,
     this.monthDay,
+    this.monthOrdinal,
+    this.monthWeekday,
     this.endType = 'never',
     this.endDate,
     this.occurrenceCount,
@@ -69,6 +71,8 @@ class TaskRepeatDraft {
   final int interval;
   final String? weekdays;
   final int? monthDay;
+  final int? monthOrdinal;
+  final int? monthWeekday;
   final String endType;
   final DateTime? endDate;
   final int? occurrenceCount;

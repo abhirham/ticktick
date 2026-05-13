@@ -754,10 +754,11 @@ class TaskRepository {
         anchorDate: anchorDate,
         interval: interval,
       ),
-      TaskRepeatFrequency.monthly => _addMonths(
-        currentDate,
-        interval,
-        day: rule.repeatMonthDay ?? anchorDate.day,
+      TaskRepeatFrequency.monthly => _nextMonthlyOccurrenceDate(
+        rule,
+        currentDate: currentDate,
+        anchorDate: anchorDate,
+        interval: interval,
       ),
       TaskRepeatFrequency.yearly => _dateInMonth(
         currentDate.year + interval,
@@ -792,6 +793,32 @@ class TaskRepository {
     }
 
     return null;
+  }
+
+  DateTime _nextMonthlyOccurrenceDate(
+    RecurrenceRuleEntry rule, {
+    required DateTime currentDate,
+    required DateTime anchorDate,
+    required int interval,
+  }) {
+    final ordinal = rule.repeatMonthOrdinal;
+    final weekday = rule.repeatMonthWeekday;
+    if (ordinal != null &&
+        weekday != null &&
+        weekday >= DateTime.monday &&
+        weekday <= DateTime.sunday) {
+      return _ordinalWeekdayInMonthAfter(
+        currentDate,
+        interval: interval,
+        ordinal: ordinal,
+        weekday: weekday,
+      );
+    }
+    return _addMonths(
+      currentDate,
+      interval,
+      day: rule.repeatMonthDay ?? anchorDate.day,
+    );
   }
 
   List<int> _repeatWeekdays(RecurrenceRuleEntry rule, {required int fallback}) {
@@ -869,6 +896,53 @@ class TaskRepository {
     return _dateInMonth(year, month, day);
   }
 
+  DateTime _ordinalWeekdayInMonthAfter(
+    DateTime date, {
+    required int interval,
+    required int ordinal,
+    required int weekday,
+  }) {
+    var monthIndex = (date.year * 12) + (date.month - 1) + interval;
+    while (true) {
+      final candidate = _ordinalWeekdayInMonth(
+        monthIndex ~/ 12,
+        (monthIndex % 12) + 1,
+        ordinal: ordinal,
+        weekday: weekday,
+      );
+      if (candidate.isAfter(date)) {
+        return candidate;
+      }
+      monthIndex += interval;
+    }
+  }
+
+  DateTime _ordinalWeekdayInMonth(
+    int year,
+    int month, {
+    required int ordinal,
+    required int weekday,
+  }) {
+    if (ordinal < 0) {
+      var candidate = DateTime(year, month + 1, 0);
+      while (candidate.weekday != weekday) {
+        candidate = candidate.subtract(const Duration(days: 1));
+      }
+      return candidate;
+    }
+
+    final safeOrdinal = ordinal < 1 ? 1 : ordinal;
+    var candidate = DateTime(year, month, 1);
+    while (candidate.weekday != weekday) {
+      candidate = candidate.add(const Duration(days: 1));
+    }
+    candidate = candidate.add(Duration(days: (safeOrdinal - 1) * 7));
+    if (candidate.month != month) {
+      return _ordinalWeekdayInMonth(year, month, ordinal: -1, weekday: weekday);
+    }
+    return candidate;
+  }
+
   DateTime _dateInMonth(int year, int month, int day) {
     final lastDay = DateTime(year, month + 1, 0).day;
     final clampedDay = day < 1 ? 1 : (day > lastDay ? lastDay : day);
@@ -916,6 +990,8 @@ class TaskRepository {
             repeatInterval: Value(draft.interval),
             repeatWeekdays: Value(_nullableText(draft.weekdays)),
             repeatMonthDay: Value(draft.monthDay),
+            repeatMonthOrdinal: Value(draft.monthOrdinal),
+            repeatMonthWeekday: Value(draft.monthWeekday),
             repeatEndType: Value(draft.endType),
             repeatEndDate: Value(
               draft.endDate == null ? null : dateOnly(draft.endDate!),

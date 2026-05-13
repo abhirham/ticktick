@@ -6,8 +6,8 @@
 - [x] Confirm text scale, row height, card radius, icon size, and safe-area spacing match the reference screenshots on the Samsung device.
 - [x] Capture fresh screenshots for each main screen and keep them under `build/screenshots/` for comparison.
 - [ ] Fix any remaining default Material-looking controls, dialogs, inputs, pickers, or buttons.
-- [ ] Verify quick-add and task-detail sheets with the keyboard open and closed.
-- [ ] Verify long task titles, long list names, and large Android font settings do not overflow.
+- [ ] [in progress: codex/phone-smoke] Verify quick-add and task-detail sheets with the keyboard open and closed.
+- [ ] [in progress: codex/phone-smoke] Verify long task titles, long list names, and large Android font settings do not overflow.
 
 ## Task Basics
 
@@ -48,25 +48,25 @@
 
 ## Repeating Tasks
 
-- [ ] Finish recurrence editor UI.
+- [x] Finish recurrence editor UI.
 - [x] Implement next occurrence generation when a repeating task is completed.
 - [x] Prevent duplicate future occurrences.
-- [ ] Support daily, weekly, monthly, yearly, custom intervals, weekdays, weekends, selected weekdays, last Friday, and every other Saturday.
-- [ ] Implement overdue repeating behavior setting.
+- [x] Support daily, weekly, monthly, yearly, custom intervals, weekdays, weekends, selected weekdays, last Friday, and every other Saturday.
+- [ ] [in progress: codex/main] Implement overdue repeating behavior setting.
 - [x] Verify persistent plus repeating tasks do not duplicate.
 - [x] Add recurrence engine tests for all supported patterns.
 
 ## Reminders And Notifications
 
-- [ ] Finish reminder editor UI with multiple reminders per task.
-- [ ] Schedule local notifications with `flutter_local_notifications` and `timezone`.
-- [ ] Request and display notification permission status.
-- [ ] Add test notification button in settings.
-- [ ] Cancel reminders on complete/delete and reschedule on date/time changes.
-- [ ] Implement notification actions: mark complete, snooze, and open task.
-- [ ] Implement snooze reminders without changing due date.
-- [ ] Handle Android exact alarm limitations gracefully.
-- [ ] Add reminder scheduling, cancellation, reschedule, snooze, repeating, and persistent tests.
+- [x] Finish reminder editor UI with multiple reminders per task.
+- [ ] [in progress: codex/main] Schedule local notifications with `flutter_local_notifications` and `timezone`.
+- [ ] [in progress: codex/main] Request and display notification permission status.
+- [ ] [in progress: codex/main] Add test notification button in settings.
+- [ ] [in progress: codex/main] Cancel reminders on complete/delete and reschedule on date/time changes.
+- [ ] [in progress: codex/main] Implement notification actions: mark complete, snooze, and open task.
+- [ ] [in progress: codex/main] Implement snooze reminders without changing due date.
+- [ ] [in progress: codex/main] Handle Android exact alarm limitations gracefully.
+- [ ] [in progress: codex/main] Add reminder scheduling, cancellation, reschedule, snooze, repeating, and persistent tests.
 
 ## Calendar
 
@@ -85,12 +85,12 @@
 - [x] Persist widget-safe snapshots with due-today count, generated time, timezone, and next due-today task titles.
 - [x] Ensure widget count includes only open tasks with `dueDate == today`.
 - [x] Exclude overdue, completed, deleted, future, no-date, and persistent no-date tasks from widget count.
-- [ ] Implement iOS WidgetKit home-screen and lock-screen widgets.
-- [ ] Implement Android home-screen App Widget.
-- [ ] Add Android lock-screen support only where OS/device allows it.
-- [ ] Add deep links for `flowtask://today`, `flowtask://task/{id}`, and `flowtask://add`.
-- [ ] Add midnight, timezone-change, task-change, and app-open widget refresh triggers.
-- [ ] Add widget privacy settings.
+- [ ] [in progress: codex/native] Implement iOS WidgetKit home-screen and lock-screen widgets.
+- [ ] [in progress: codex/native] Implement Android home-screen App Widget.
+- [ ] [in progress: codex/native] Add Android lock-screen support only where OS/device allows it.
+- [ ] [in progress: codex/native] Add deep links for `flowtask://today`, `flowtask://task/{id}`, and `flowtask://add`.
+- [ ] [in progress: codex/native] Add midnight, timezone-change, task-change, and app-open widget refresh triggers.
+- [ ] [in progress: codex/native] Add widget privacy settings.
 - [x] Add widget snapshot and widget-count tests.
 
 ## Settings
@@ -103,26 +103,26 @@
 
 - [x] Verify Android app runs cleanly on the connected Samsung phone.
 - [x] Keep the connected Android phone awake during QA sessions.
-- [ ] Verify iOS app builds and launches in Simulator or on device.
-- [ ] Add iOS WidgetKit extension target under `ios/Runner/FlowTaskTodayWidget`.
-- [ ] Add Android App Widget files under `android/app/flowtask_today_widget`.
-- [ ] Confirm native widgets read the shared widget data bridge.
-- [ ] Confirm app icons, labels, launch theme, and permissions are production-ready.
+- [ ] [in progress: codex/native] Verify iOS app builds and launches in Simulator or on device.
+- [ ] [in progress: codex/native] Add iOS WidgetKit extension target under `ios/Runner/FlowTaskTodayWidget`.
+- [ ] [in progress: codex/native] Add Android App Widget files under `android/app/flowtask_today_widget`.
+- [ ] [in progress: codex/native] Confirm native widgets read the shared widget data bridge.
+- [ ] [in progress: codex/native] Confirm app icons, labels, launch theme, and permissions are production-ready.
 
 ## Tests And QA
 
-- [ ] Expand repository tests beyond the current baseline.
-- [ ] Add unit tests for task repository, parser, recurrence engine, reminders, list/group repository, Today query, completed/trash behavior, calendar query, and widget count.
-- [ ] Add widget tests for Today, Calendar, Add Task, Task Detail, List Detail, grouped list UI, reminder editor, natural-language chips, and widget settings.
-- [ ] Add feasible native/widget tests for Android and iOS widget snapshots.
-- [ ] Add integration tests for the core acceptance flows.
+- [ ] [in progress: codex/qa] Expand repository tests beyond the current baseline.
+- [ ] [in progress: codex/qa] Add unit tests for task repository, parser, recurrence engine, reminders, list/group repository, Today query, completed/trash behavior, calendar query, and widget count.
+- [ ] [in progress: codex/qa] Add widget tests for Today, Calendar, Add Task, Task Detail, List Detail, grouped list UI, reminder editor, natural-language chips, and widget settings.
+- [ ] [in progress: codex/qa] Add feasible native/widget tests for Android and iOS widget snapshots.
+- [ ] [in progress: codex/qa] Add integration tests for the core acceptance flows.
 - [x] Run `flutter analyze` before each checkpoint.
 - [x] Run `flutter test` before each checkpoint.
-- [ ] Keep committing small checkpoints with clear messages.
+- [ ] [in progress: codex/main] Keep committing small checkpoints with clear messages.
 
 ## Cleanup
 
 - [x] Decide whether to keep, delete, or commit `assets/brand/flowtask-icon.svg`.
-- [ ] Review docs for drift after implementation changes.
-- [ ] Remove any dead code, placeholder UI, or unused routes.
-- [ ] Audit all buttons so unsupported actions are disabled or implemented.
+- [ ] [in progress: codex/main] Review docs for drift after implementation changes.
+- [ ] [in progress: codex/main] Remove any dead code, placeholder UI, or unused routes.
+- [ ] [in progress: codex/main] Audit all buttons so unsupported actions are disabled or implemented.

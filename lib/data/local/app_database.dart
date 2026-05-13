@@ -127,6 +127,10 @@ class RecurrenceRuleEntries extends Table {
   TextColumn get repeatWeekdays => text().named('repeat_weekdays').nullable()();
   IntColumn get repeatMonthDay =>
       integer().named('repeat_month_day').nullable()();
+  IntColumn get repeatMonthOrdinal =>
+      integer().named('repeat_month_ordinal').nullable()();
+  IntColumn get repeatMonthWeekday =>
+      integer().named('repeat_month_weekday').nullable()();
   TextColumn get repeatEndType =>
       text().named('repeat_end_type').withDefault(const Constant('never'))();
   DateTimeColumn get repeatEndDate =>
@@ -223,7 +227,7 @@ class AppDatabase extends _$AppDatabase {
   };
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration {
@@ -231,6 +235,18 @@ class AppDatabase extends _$AppDatabase {
       onCreate: (migrator) async {
         await migrator.createAll();
         await _seedDefaults();
+      },
+      onUpgrade: (migrator, from, to) async {
+        if (from < 2) {
+          await migrator.addColumn(
+            recurrenceRuleEntries,
+            recurrenceRuleEntries.repeatMonthOrdinal,
+          );
+          await migrator.addColumn(
+            recurrenceRuleEntries,
+            recurrenceRuleEntries.repeatMonthWeekday,
+          );
+        }
       },
       beforeOpen: (details) async {
         await customStatement('PRAGMA foreign_keys = ON');

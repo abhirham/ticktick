@@ -4,6 +4,7 @@ import '../../../../app/theme.dart';
 import '../../../../core/time/flow_date_utils.dart';
 import '../../../../data/local/app_database.dart';
 import '../../../../shared/presentation/flow_bottom_sheet.dart';
+import '../../../../shared/presentation/flow_date_picker.dart';
 import '../../domain/natural_language_task_parser.dart';
 import '../../domain/task_draft.dart';
 import '../../domain/task_enums.dart';
@@ -27,9 +28,19 @@ enum TaskInputReminderChoice {
   atDueTime,
   tenMinutesBefore,
   oneHourBefore,
+  oneDayBefore,
 }
 
-enum TaskInputRepeatChoice { none, daily, weekdays, weekly, monthly }
+enum TaskInputRepeatChoice {
+  none,
+  daily,
+  weekdays,
+  weekends,
+  weekly,
+  monthly,
+  yearly,
+  everyOtherSaturday,
+}
 
 class NaturalLanguageTaskFormState {
   NaturalLanguageTaskFormState({
@@ -622,12 +633,18 @@ String taskInputReminderLabel(List<TaskReminderDraft> reminders) {
   if (reminders.isEmpty) {
     return 'No reminder';
   }
+  if (reminders.length > 1) {
+    return '${reminders.length} reminders';
+  }
   final reminder = reminders.first;
   if (reminder.offsetMinutes == -10) {
     return '10 min before';
   }
   if (reminder.offsetMinutes == -60) {
     return '1 hour before';
+  }
+  if (reminder.offsetMinutes == -1440) {
+    return '1 day before';
   }
   if (reminder.offsetMinutes == 0) {
     return 'At due time';
@@ -642,11 +659,54 @@ String taskInputRepeatLabel(TaskRepeatDraft? draft) {
   if (draft == null) {
     return 'No repeat';
   }
+  final interval = draft.interval < 1 ? 1 : draft.interval;
   if (draft.frequency == TaskRepeatFrequency.weekly &&
       draft.weekdays == '1,2,3,4,5') {
-    return 'Weekdays';
+    return interval == 1 ? 'Weekdays' : 'Every $interval weeks, weekdays';
   }
-  return draft.frequency.label;
+  if (draft.frequency == TaskRepeatFrequency.weekly &&
+      draft.weekdays == '6,7') {
+    return interval == 1 ? 'Weekends' : 'Every $interval weeks, weekends';
+  }
+  if (draft.frequency == TaskRepeatFrequency.weekly &&
+      draft.weekdays == '6' &&
+      interval == 2) {
+    return 'Every other Saturday';
+  }
+  if (draft.frequency == TaskRepeatFrequency.weekly &&
+      draft.weekdays != null &&
+      draft.weekdays!.isNotEmpty) {
+    final days = _weekdayLabelsFromCsv(draft.weekdays!);
+    final prefix = interval == 1 ? 'Weekly' : 'Every $interval weeks';
+    return '$prefix ${days.join(', ')}';
+  }
+  if (draft.frequency == TaskRepeatFrequency.monthly &&
+      draft.monthOrdinal != null &&
+      draft.monthWeekday != null) {
+    final ordinal = draft.monthOrdinal == -1
+        ? 'last'
+        : _ordinalLabel(draft.monthOrdinal!);
+    final weekday = _weekdayShortLabel(draft.monthWeekday!);
+    return interval == 1
+        ? 'Monthly, $ordinal $weekday'
+        : 'Every $interval months, $ordinal $weekday';
+  }
+  if (draft.frequency == TaskRepeatFrequency.monthly &&
+      draft.monthDay != null) {
+    return interval == 1
+        ? 'Monthly on day ${draft.monthDay}'
+        : 'Every $interval months on day ${draft.monthDay}';
+  }
+  if (interval == 1) {
+    return draft.frequency.label;
+  }
+  final unit = switch (draft.frequency) {
+    TaskRepeatFrequency.daily => 'days',
+    TaskRepeatFrequency.weekly => 'weeks',
+    TaskRepeatFrequency.monthly => 'months',
+    TaskRepeatFrequency.yearly => 'years',
+  };
+  return 'Every $interval $unit';
 }
 
 List<TaskReminderDraft> taskInputRemindersForChoice(
@@ -689,6 +749,13 @@ List<TaskReminderDraft> taskInputRemindersForChoice(
         offsetMinutes: -60,
       ),
     ],
+    TaskInputReminderChoice.oneDayBefore => [
+      TaskReminderDraft(
+        reminderType: 'relative',
+        remindAt: dueAt.subtract(const Duration(days: 1)),
+        offsetMinutes: -1440,
+      ),
+    ],
   };
 }
 
@@ -705,6 +772,10 @@ TaskRepeatDraft? taskInputRepeatForChoice(
       frequency: TaskRepeatFrequency.weekly,
       weekdays: '1,2,3,4,5',
     ),
+    TaskInputRepeatChoice.weekends => const TaskRepeatDraft(
+      frequency: TaskRepeatFrequency.weekly,
+      weekdays: '6,7',
+    ),
     TaskInputRepeatChoice.weekly => const TaskRepeatDraft(
       frequency: TaskRepeatFrequency.weekly,
     ),
@@ -712,6 +783,81 @@ TaskRepeatDraft? taskInputRepeatForChoice(
       frequency: TaskRepeatFrequency.monthly,
       monthDay: (dueDate ?? DateTime.now()).day,
     ),
+    TaskInputRepeatChoice.yearly => const TaskRepeatDraft(
+      frequency: TaskRepeatFrequency.yearly,
+    ),
+    TaskInputRepeatChoice.everyOtherSaturday => const TaskRepeatDraft(
+      frequency: TaskRepeatFrequency.weekly,
+      interval: 2,
+      weekdays: '6',
+    ),
+  };
+}
+
+TaskRepeatDraft? taskInputRepeatDraftFromEntry(
+  RecurrenceRuleEntry? entry,
+  String? ruleId,
+) {
+  if (ruleId == null) {
+    return null;
+  }
+  if (entry == null) {
+    return const TaskRepeatDraft(frequency: TaskRepeatFrequency.daily);
+  }
+  return TaskRepeatDraft(
+    frequency: TaskRepeatFrequency.fromValue(entry.repeatFrequency),
+    interval: entry.repeatInterval,
+    weekdays: entry.repeatWeekdays,
+    monthDay: entry.repeatMonthDay,
+    monthOrdinal: entry.repeatMonthOrdinal,
+    monthWeekday: entry.repeatMonthWeekday,
+    endType: entry.repeatEndType,
+    endDate: entry.repeatEndDate,
+    occurrenceCount: entry.repeatOccurrenceCount,
+  );
+}
+
+String taskInputReminderEntryLabel(List<ReminderEntry> reminders) {
+  return taskInputReminderLabel([
+    for (final reminder in reminders)
+      TaskReminderDraft(
+        remindAt: reminder.remindAt,
+        reminderType: reminder.reminderType,
+        offsetMinutes: reminder.offsetMinutes,
+        isEnabled: reminder.isEnabled,
+      ),
+  ]);
+}
+
+List<String> _weekdayLabelsFromCsv(String value) {
+  return value
+      .split(',')
+      .map((part) => int.tryParse(part.trim()))
+      .whereType<int>()
+      .map(_weekdayShortLabel)
+      .toList(growable: false);
+}
+
+String _weekdayShortLabel(int weekday) {
+  return switch (weekday) {
+    DateTime.monday => 'Mon',
+    DateTime.tuesday => 'Tue',
+    DateTime.wednesday => 'Wed',
+    DateTime.thursday => 'Thu',
+    DateTime.friday => 'Fri',
+    DateTime.saturday => 'Sat',
+    DateTime.sunday => 'Sun',
+    _ => 'Day',
+  };
+}
+
+String _ordinalLabel(int ordinal) {
+  return switch (ordinal) {
+    1 => 'first',
+    2 => 'second',
+    3 => 'third',
+    4 => 'fourth',
+    _ => '${ordinal}th',
   };
 }
 
@@ -760,6 +906,40 @@ Future<TaskInputRepeatChoice?> showTaskInputRepeatChoiceSheet(
   );
 }
 
+Future<List<TaskReminderDraft>?> showTaskReminderEditorSheet(
+  BuildContext context, {
+  required List<TaskReminderDraft> initialReminders,
+  required DateTime? dueDate,
+  required String? dueTime,
+}) {
+  return showFlowBottomSheet<List<TaskReminderDraft>>(
+    context: context,
+    builder: (context) => _ReminderEditorSheet(
+      initialReminders: initialReminders,
+      dueDate: dueDate,
+      dueTime: dueTime,
+    ),
+  );
+}
+
+class TaskRepeatEditorResult {
+  const TaskRepeatEditorResult(this.repeatRule);
+
+  final TaskRepeatDraft? repeatRule;
+}
+
+Future<TaskRepeatEditorResult?> showTaskRepeatEditorSheet(
+  BuildContext context, {
+  required TaskRepeatDraft? initialRule,
+  required DateTime? dueDate,
+}) {
+  return showFlowBottomSheet<TaskRepeatEditorResult>(
+    context: context,
+    builder: (context) =>
+        _RepeatEditorSheet(initialRule: initialRule, dueDate: dueDate),
+  );
+}
+
 Future<String?> showTaskInputListChoiceSheet(
   BuildContext context, {
   required List<TaskList> lists,
@@ -782,6 +962,744 @@ Future<String?> showTaskInputGroupChoiceSheet(
     builder: (context) =>
         _GroupChoiceSheet(groups: groups, selectedId: selectedId),
   );
+}
+
+class _ReminderEditorSheet extends StatefulWidget {
+  const _ReminderEditorSheet({
+    required this.initialReminders,
+    required this.dueDate,
+    required this.dueTime,
+  });
+
+  final List<TaskReminderDraft> initialReminders;
+  final DateTime? dueDate;
+  final String? dueTime;
+
+  @override
+  State<_ReminderEditorSheet> createState() => _ReminderEditorSheetState();
+}
+
+class _ReminderEditorSheetState extends State<_ReminderEditorSheet> {
+  late List<TaskReminderDraft> _reminders;
+
+  @override
+  void initState() {
+    super.initState();
+    _reminders = [...widget.initialReminders];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return FlowBottomSheetSurface(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 22),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.72,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Reminders',
+                style: TextStyle(
+                  color: colors.textStrong,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (_reminders.isEmpty)
+                Text(
+                  'No reminders set',
+                  style: TextStyle(
+                    color: colors.textMuted,
+                    fontSize: 14.5,
+                    height: 1.3,
+                  ),
+                )
+              else
+                for (var index = 0; index < _reminders.length; index++)
+                  _EditorRow(
+                    icon: Icons.notifications_none_rounded,
+                    label: taskInputReminderLabel([_reminders[index]]),
+                    selected: true,
+                    trailingIcon: Icons.close_rounded,
+                    onTap: () {
+                      setState(() => _reminders.removeAt(index));
+                    },
+                  ),
+              const SizedBox(height: 14),
+              _EditorSectionLabel(label: 'Add'),
+              _EditorRow(
+                icon: Icons.wb_sunny_outlined,
+                label: 'Due date morning',
+                onTap: () => _addChoice(TaskInputReminderChoice.morning),
+              ),
+              _EditorRow(
+                icon: Icons.notifications_none_rounded,
+                label: 'At due time',
+                onTap: () => _addChoice(TaskInputReminderChoice.atDueTime),
+              ),
+              _EditorRow(
+                icon: Icons.timer_outlined,
+                label: '10 min before',
+                onTap: () =>
+                    _addChoice(TaskInputReminderChoice.tenMinutesBefore),
+              ),
+              _EditorRow(
+                icon: Icons.timer_outlined,
+                label: '1 hour before',
+                onTap: () => _addChoice(TaskInputReminderChoice.oneHourBefore),
+              ),
+              _EditorRow(
+                icon: Icons.event_repeat_outlined,
+                label: '1 day before',
+                onTap: () => _addChoice(TaskInputReminderChoice.oneDayBefore),
+              ),
+              _EditorRow(
+                icon: Icons.edit_calendar_outlined,
+                label: 'Custom date and time',
+                onTap: _addCustomReminder,
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: _EditorButton(
+                      icon: Icons.notifications_off_outlined,
+                      label: 'Clear',
+                      onTap: () => Navigator.of(context).pop(const []),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _EditorButton(
+                      primary: true,
+                      icon: Icons.check_rounded,
+                      label: 'Done',
+                      onTap: () => Navigator.of(context).pop(_reminders),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _addChoice(TaskInputReminderChoice choice) {
+    final next = taskInputRemindersForChoice(
+      choice,
+      dueDate: widget.dueDate,
+      dueTime: widget.dueTime,
+    );
+    setState(() {
+      for (final reminder in next) {
+        if (!_containsReminder(reminder)) {
+          _reminders.add(reminder);
+        }
+      }
+      _reminders.sort((a, b) => a.remindAt.compareTo(b.remindAt));
+    });
+  }
+
+  Future<void> _addCustomReminder() async {
+    final now = DateTime.now();
+    final date = await showFlowDatePicker(
+      context: context,
+      initialDate: widget.dueDate ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (!mounted || date == null) {
+      return;
+    }
+    final time = await showTaskInputTimeChoiceSheet(context);
+    if (!mounted || time == null || time.isEmpty) {
+      return;
+    }
+    final reminder = TaskReminderDraft(
+      reminderType: 'absolute',
+      remindAt: taskInputCombineDateAndTime(dateOnly(date), time),
+    );
+    setState(() {
+      if (!_containsReminder(reminder)) {
+        _reminders.add(reminder);
+        _reminders.sort((a, b) => a.remindAt.compareTo(b.remindAt));
+      }
+    });
+  }
+
+  bool _containsReminder(TaskReminderDraft reminder) {
+    return _reminders.any(
+      (item) =>
+          item.remindAt == reminder.remindAt &&
+          item.offsetMinutes == reminder.offsetMinutes &&
+          item.reminderType == reminder.reminderType,
+    );
+  }
+}
+
+class _RepeatEditorSheet extends StatefulWidget {
+  const _RepeatEditorSheet({required this.initialRule, required this.dueDate});
+
+  final TaskRepeatDraft? initialRule;
+  final DateTime? dueDate;
+
+  @override
+  State<_RepeatEditorSheet> createState() => _RepeatEditorSheetState();
+}
+
+class _RepeatEditorSheetState extends State<_RepeatEditorSheet> {
+  late TaskRepeatFrequency _frequency;
+  late int _interval;
+  late Set<int> _weekdays;
+  late bool _useMonthlyOrdinal;
+  late int _monthDay;
+  late int _monthOrdinal;
+  late int _monthWeekday;
+  late String _endType;
+  DateTime? _endDate;
+  late int _occurrenceCount;
+
+  @override
+  void initState() {
+    super.initState();
+    final anchor = widget.dueDate ?? DateTime.now();
+    final initial = widget.initialRule;
+    _frequency = initial?.frequency ?? TaskRepeatFrequency.daily;
+    _interval = initial?.interval ?? 1;
+    _weekdays = _parseWeekdays(initial?.weekdays, fallback: anchor.weekday);
+    _useMonthlyOrdinal =
+        initial?.monthOrdinal != null && initial?.monthWeekday != null;
+    _monthDay = initial?.monthDay ?? anchor.day;
+    _monthOrdinal = initial?.monthOrdinal ?? _ordinalOfDate(anchor);
+    _monthWeekday = initial?.monthWeekday ?? anchor.weekday;
+    _endType = initial?.endType ?? 'never';
+    _endDate = initial?.endDate;
+    _occurrenceCount = initial?.occurrenceCount ?? 5;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return FlowBottomSheetSurface(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 22),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.78,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Repeat',
+                style: TextStyle(
+                  color: colors.textStrong,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final frequency in TaskRepeatFrequency.values)
+                    _EditorChip(
+                      label: frequency.label,
+                      selected: _frequency == frequency,
+                      onTap: () => setState(() => _frequency = frequency),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _EditorSectionLabel(label: _intervalLabel),
+              Row(
+                children: [
+                  _StepperButton(
+                    icon: Icons.remove_rounded,
+                    onTap: () {
+                      setState(() {
+                        if (_interval > 1) {
+                          _interval--;
+                        }
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        '$_interval',
+                        style: TextStyle(
+                          color: colors.textStrong,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _StepperButton(
+                    icon: Icons.add_rounded,
+                    onTap: () {
+                      setState(() {
+                        if (_interval < 30) {
+                          _interval++;
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+              if (_frequency == TaskRepeatFrequency.weekly) ...[
+                const SizedBox(height: 18),
+                _EditorSectionLabel(label: 'Repeat on'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final weekday in const [
+                      DateTime.monday,
+                      DateTime.tuesday,
+                      DateTime.wednesday,
+                      DateTime.thursday,
+                      DateTime.friday,
+                      DateTime.saturday,
+                      DateTime.sunday,
+                    ])
+                      _EditorChip(
+                        label: _weekdayShortLabel(weekday),
+                        selected: _weekdays.contains(weekday),
+                        onTap: () {
+                          setState(() {
+                            if (_weekdays.contains(weekday)) {
+                              if (_weekdays.length > 1) {
+                                _weekdays.remove(weekday);
+                              }
+                            } else {
+                              _weekdays.add(weekday);
+                            }
+                          });
+                        },
+                      ),
+                    _EditorChip(
+                      label: 'Weekdays',
+                      selected: _weekdays.containsAll(const [1, 2, 3, 4, 5]),
+                      onTap: () => setState(() => _weekdays = {1, 2, 3, 4, 5}),
+                    ),
+                    _EditorChip(
+                      label: 'Weekends',
+                      selected:
+                          _weekdays.length == 2 &&
+                          _weekdays.containsAll(const [6, 7]),
+                      onTap: () => setState(() => _weekdays = {6, 7}),
+                    ),
+                    _EditorChip(
+                      label: 'Every other Sat',
+                      selected:
+                          _interval == 2 &&
+                          _weekdays.length == 1 &&
+                          _weekdays.contains(DateTime.saturday),
+                      onTap: () => setState(() {
+                        _interval = 2;
+                        _weekdays = {DateTime.saturday};
+                      }),
+                    ),
+                  ],
+                ),
+              ],
+              if (_frequency == TaskRepeatFrequency.monthly) ...[
+                const SizedBox(height: 18),
+                _EditorSectionLabel(label: 'Monthly pattern'),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _EditorChip(
+                      label: 'Day $_monthDay',
+                      selected: !_useMonthlyOrdinal,
+                      onTap: () => setState(() => _useMonthlyOrdinal = false),
+                    ),
+                    _EditorChip(
+                      label: _monthlyOrdinalLabel,
+                      selected: _useMonthlyOrdinal,
+                      onTap: () => setState(() => _useMonthlyOrdinal = true),
+                    ),
+                    _EditorChip(
+                      label: 'Last Friday',
+                      selected:
+                          _useMonthlyOrdinal &&
+                          _monthOrdinal == -1 &&
+                          _monthWeekday == DateTime.friday,
+                      onTap: () => setState(() {
+                        _useMonthlyOrdinal = true;
+                        _monthOrdinal = -1;
+                        _monthWeekday = DateTime.friday;
+                      }),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 18),
+              _EditorSectionLabel(label: 'Ends'),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _EditorChip(
+                    label: 'Never',
+                    selected: _endType == 'never',
+                    onTap: () => setState(() => _endType = 'never'),
+                  ),
+                  _EditorChip(
+                    label: _endDate == null
+                        ? 'On date'
+                        : 'On ${compactDateLabel(_endDate!, DateTime.now())}',
+                    selected: _endType == 'date',
+                    onTap: _pickEndDate,
+                  ),
+                  _EditorChip(
+                    label: 'After $_occurrenceCount',
+                    selected: _endType == 'count',
+                    onTap: () => setState(() => _endType = 'count'),
+                  ),
+                ],
+              ),
+              if (_endType == 'count') ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _StepperButton(
+                      icon: Icons.remove_rounded,
+                      onTap: () => setState(() {
+                        if (_occurrenceCount > 1) {
+                          _occurrenceCount--;
+                        }
+                      }),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          '$_occurrenceCount occurrences',
+                          style: TextStyle(
+                            color: colors.textStrong,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    _StepperButton(
+                      icon: Icons.add_rounded,
+                      onTap: () => setState(() => _occurrenceCount++),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: _EditorButton(
+                      icon: Icons.repeat_on_rounded,
+                      label: 'No repeat',
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pop(const TaskRepeatEditorResult(null)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _EditorButton(
+                      primary: true,
+                      icon: Icons.check_rounded,
+                      label: 'Done',
+                      onTap: () => Navigator.of(
+                        context,
+                      ).pop(TaskRepeatEditorResult(_draft)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String get _intervalLabel {
+    final unit = switch (_frequency) {
+      TaskRepeatFrequency.daily => _interval == 1 ? 'day' : 'days',
+      TaskRepeatFrequency.weekly => _interval == 1 ? 'week' : 'weeks',
+      TaskRepeatFrequency.monthly => _interval == 1 ? 'month' : 'months',
+      TaskRepeatFrequency.yearly => _interval == 1 ? 'year' : 'years',
+    };
+    return 'Every $_interval $unit';
+  }
+
+  String get _monthlyOrdinalLabel {
+    final ordinal = _monthOrdinal == -1
+        ? 'Last'
+        : _ordinalLabel(_monthOrdinal).replaceFirstMapped(
+            RegExp(r'^[a-z]'),
+            (match) => match.group(0)!.toUpperCase(),
+          );
+    return '$ordinal ${_weekdayShortLabel(_monthWeekday)}';
+  }
+
+  TaskRepeatDraft get _draft {
+    final weekdays = _frequency == TaskRepeatFrequency.weekly
+        ? (_weekdays.toList()..sort()).join(',')
+        : null;
+    return TaskRepeatDraft(
+      frequency: _frequency,
+      interval: _interval,
+      weekdays: weekdays,
+      monthDay: _frequency == TaskRepeatFrequency.monthly && !_useMonthlyOrdinal
+          ? _monthDay
+          : null,
+      monthOrdinal:
+          _frequency == TaskRepeatFrequency.monthly && _useMonthlyOrdinal
+          ? _monthOrdinal
+          : null,
+      monthWeekday:
+          _frequency == TaskRepeatFrequency.monthly && _useMonthlyOrdinal
+          ? _monthWeekday
+          : null,
+      endType: _endType,
+      endDate: _endType == 'date' ? _endDate : null,
+      occurrenceCount: _endType == 'count' ? _occurrenceCount : null,
+    );
+  }
+
+  Future<void> _pickEndDate() async {
+    final now = DateTime.now();
+    final picked = await showFlowDatePicker(
+      context: context,
+      initialDate: _endDate ?? widget.dueDate ?? now,
+      firstDate: now,
+      lastDate: DateTime(now.year + 10),
+    );
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _endType = 'date';
+      if (picked != null) {
+        _endDate = dateOnly(picked);
+      }
+    });
+  }
+
+  Set<int> _parseWeekdays(String? value, {required int fallback}) {
+    final parsed = value
+        ?.split(',')
+        .map((part) => int.tryParse(part.trim()))
+        .whereType<int>()
+        .where((day) => day >= DateTime.monday && day <= DateTime.sunday)
+        .toSet();
+    if (parsed == null || parsed.isEmpty) {
+      return {fallback};
+    }
+    return parsed;
+  }
+
+  int _ordinalOfDate(DateTime date) {
+    final ordinal = ((date.day - 1) ~/ 7) + 1;
+    final sameWeekdayNextWeek = date.add(const Duration(days: 7));
+    if (sameWeekdayNextWeek.month != date.month) {
+      return -1;
+    }
+    return ordinal;
+  }
+}
+
+class _EditorSectionLabel extends StatelessWidget {
+  const _EditorSectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: context.colors.textMuted,
+          fontSize: 13.5,
+          fontWeight: FontWeight.w700,
+          height: 1.2,
+        ),
+      ),
+    );
+  }
+}
+
+class _EditorChip extends StatelessWidget {
+  const _EditorChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final foreground = selected ? colors.primary : colors.textMuted;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? colors.surfaceSelected : colors.surfaceRaised,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: foreground,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EditorRow extends StatelessWidget {
+  const _EditorRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+    this.trailingIcon,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+  final IconData? trailingIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final foreground = selected ? colors.primary : colors.text;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          children: [
+            Icon(icon, color: foreground, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (trailingIcon != null)
+              Icon(trailingIcon, color: foreground, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  const _StepperButton({required this.icon, required this.onTap});
+
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 42,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Icon(icon, color: context.colors.primary, size: 24),
+      ),
+    );
+  }
+}
+
+class _EditorButton extends StatelessWidget {
+  const _EditorButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.primary = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool primary;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final background = primary ? colors.primary : colors.surfaceRaised;
+    final foreground = primary ? colors.textStrong : colors.text;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        height: 46,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: foreground, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: foreground,
+                fontSize: 15.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _DateChoiceSheet extends StatelessWidget {
@@ -936,6 +1854,12 @@ class _ReminderChoiceSheet extends StatelessWidget {
           onTap: () =>
               Navigator.of(context).pop(TaskInputReminderChoice.oneHourBefore),
         ),
+        _ChoiceRow(
+          icon: Icons.event_repeat_outlined,
+          label: '1 day before',
+          onTap: () =>
+              Navigator.of(context).pop(TaskInputReminderChoice.oneDayBefore),
+        ),
       ],
     );
   }
@@ -966,14 +1890,32 @@ class _RepeatChoiceSheet extends StatelessWidget {
               Navigator.of(context).pop(TaskInputRepeatChoice.weekdays),
         ),
         _ChoiceRow(
+          icon: Icons.weekend_outlined,
+          label: 'Weekends',
+          onTap: () =>
+              Navigator.of(context).pop(TaskInputRepeatChoice.weekends),
+        ),
+        _ChoiceRow(
           icon: Icons.calendar_view_week_outlined,
           label: 'Weekly',
           onTap: () => Navigator.of(context).pop(TaskInputRepeatChoice.weekly),
         ),
         _ChoiceRow(
+          icon: Icons.event_repeat_outlined,
+          label: 'Every other Saturday',
+          onTap: () => Navigator.of(
+            context,
+          ).pop(TaskInputRepeatChoice.everyOtherSaturday),
+        ),
+        _ChoiceRow(
           icon: Icons.calendar_month_outlined,
           label: 'Monthly',
           onTap: () => Navigator.of(context).pop(TaskInputRepeatChoice.monthly),
+        ),
+        _ChoiceRow(
+          icon: Icons.event_available_outlined,
+          label: 'Yearly',
+          onTap: () => Navigator.of(context).pop(TaskInputRepeatChoice.yearly),
         ),
       ],
     );

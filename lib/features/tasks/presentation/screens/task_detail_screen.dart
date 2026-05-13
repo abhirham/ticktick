@@ -12,6 +12,7 @@ import '../../../../shared/presentation/flow_date_picker.dart';
 import '../../application/task_providers.dart';
 import '../../domain/task_draft.dart';
 import '../../domain/task_enums.dart';
+import '../widgets/natural_language_task_input.dart';
 import '../widgets/priority_sheet.dart';
 import '../widgets/task_widgets.dart';
 
@@ -94,11 +95,16 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
           final listName = _listName(lists, _listId);
           final groupName = _groupName(groups, _groupId);
           final reminderLabel = _remindersChanged
-              ? _reminderDraftLabel(_reminders)
-              : _reminderEntryLabel(reminderEntries);
-          final repeatLabel = _repeatChanged
-              ? _repeatDraftLabel(_repeatRule)
-              : _repeatEntryLabel(repeatEntry, task.recurrenceRuleId);
+              ? taskInputReminderLabel(_reminders)
+              : taskInputReminderEntryLabel(reminderEntries);
+          final repeatLabel = taskInputRepeatLabel(
+            _repeatChanged
+                ? _repeatRule
+                : taskInputRepeatDraftFromEntry(
+                    repeatEntry,
+                    task.recurrenceRuleId,
+                  ),
+          );
           return Column(
             children: [
               FlowTaskPageHeader(
@@ -455,30 +461,53 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   }
 
   Future<void> _showReminderMenu() async {
-    final choice = await showFlowBottomSheet<_ReminderChoice>(
-      context: context,
-      builder: (context) => const _ReminderChoiceSheet(),
+    final existing =
+        ref
+            .read(taskRemindersProvider(widget.taskId))
+            .valueOrNull
+            ?.map(
+              (reminder) => TaskReminderDraft(
+                remindAt: reminder.remindAt,
+                reminderType: reminder.reminderType,
+                offsetMinutes: reminder.offsetMinutes,
+                isEnabled: reminder.isEnabled,
+              ),
+            )
+            .toList(growable: false) ??
+        const <TaskReminderDraft>[];
+    final reminders = await showTaskReminderEditorSheet(
+      context,
+      initialReminders: _remindersChanged ? _reminders : existing,
+      dueDate: _dueDate,
+      dueTime: _dueTime,
     );
-    if (choice == null) {
+    if (reminders == null) {
       return;
     }
     setState(() {
       _remindersChanged = true;
-      _reminders = _remindersForChoice(choice);
+      _reminders = reminders;
     });
   }
 
   Future<void> _showRepeatMenu() async {
-    final choice = await showFlowBottomSheet<_RepeatChoice>(
-      context: context,
-      builder: (context) => const _RepeatChoiceSheet(),
+    final task = ref.read(taskByIdProvider(widget.taskId)).valueOrNull;
+    final entry = task?.recurrenceRuleId == null
+        ? null
+        : ref.read(taskRepeatRuleProvider(task!.recurrenceRuleId!)).valueOrNull;
+    final result = await showTaskRepeatEditorSheet(
+      context,
+      initialRule: _repeatChanged
+          ? _repeatRule
+          : taskInputRepeatDraftFromEntry(entry, task?.recurrenceRuleId),
+      dueDate: _dueDate,
     );
-    if (choice == null) {
+    if (result == null) {
       return;
     }
     setState(() {
       _repeatChanged = true;
-      _repeatRule = _repeatForChoice(choice);
+      _repeatRule = result.repeatRule;
     });
   }
 
@@ -568,78 +597,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       ),
     );
   }
-
-  List<TaskReminderDraft> _remindersForChoice(_ReminderChoice choice) {
-    if (choice == _ReminderChoice.none) {
-      return const [];
-    }
-
-    final date = _dueDate ?? dateOnly(DateTime.now());
-    final dueAt = _combineDateAndTime(date, _dueTime ?? '09:00');
-    return switch (choice) {
-      _ReminderChoice.none => const [],
-      _ReminderChoice.morning => [
-        TaskReminderDraft(
-          reminderType: 'due_date_morning',
-          remindAt: _combineDateAndTime(date, '09:00'),
-        ),
-      ],
-      _ReminderChoice.atDueTime => [
-        TaskReminderDraft(
-          reminderType: 'relative',
-          remindAt: dueAt,
-          offsetMinutes: 0,
-        ),
-      ],
-      _ReminderChoice.tenMinutesBefore => [
-        TaskReminderDraft(
-          reminderType: 'relative',
-          remindAt: dueAt.subtract(const Duration(minutes: 10)),
-          offsetMinutes: -10,
-        ),
-      ],
-      _ReminderChoice.oneHourBefore => [
-        TaskReminderDraft(
-          reminderType: 'relative',
-          remindAt: dueAt.subtract(const Duration(hours: 1)),
-          offsetMinutes: -60,
-        ),
-      ],
-    };
-  }
-
-  TaskRepeatDraft? _repeatForChoice(_RepeatChoice choice) {
-    return switch (choice) {
-      _RepeatChoice.none => null,
-      _RepeatChoice.daily => const TaskRepeatDraft(
-        frequency: TaskRepeatFrequency.daily,
-      ),
-      _RepeatChoice.weekdays => const TaskRepeatDraft(
-        frequency: TaskRepeatFrequency.weekly,
-        weekdays: '1,2,3,4,5',
-      ),
-      _RepeatChoice.weekly => const TaskRepeatDraft(
-        frequency: TaskRepeatFrequency.weekly,
-      ),
-      _RepeatChoice.monthly => TaskRepeatDraft(
-        frequency: TaskRepeatFrequency.monthly,
-        monthDay: (_dueDate ?? DateTime.now()).day,
-      ),
-    };
-  }
 }
 
 enum _DateChoice { none, today, tomorrow, pick }
-
-enum _ReminderChoice {
-  none,
-  morning,
-  atDueTime,
-  tenMinutesBefore,
-  oneHourBefore,
-}
-
-enum _RepeatChoice { none, daily, weekdays, weekly, monthly }
 
 String _listName(List<TaskList> lists, String selectedId) {
   for (final list in lists) {
@@ -660,73 +620,6 @@ String _groupName(List<ListGroup> groups, String? selectedId) {
     }
   }
   return 'Group';
-}
-
-String _reminderDraftLabel(List<TaskReminderDraft> reminders) {
-  if (reminders.isEmpty) {
-    return 'No reminder';
-  }
-  return _reminderLabel(
-    reminders.first.remindAt,
-    offsetMinutes: reminders.first.offsetMinutes,
-  );
-}
-
-String _reminderEntryLabel(List<ReminderEntry> reminders) {
-  if (reminders.isEmpty) {
-    return 'No reminder';
-  }
-  return _reminderLabel(
-    reminders.first.remindAt,
-    offsetMinutes: reminders.first.offsetMinutes,
-  );
-}
-
-String _reminderLabel(DateTime remindAt, {int? offsetMinutes}) {
-  if (offsetMinutes == -10) {
-    return '10 min before';
-  }
-  if (offsetMinutes == -60) {
-    return '1 hour before';
-  }
-  if (offsetMinutes == 0) {
-    return 'At due time';
-  }
-  final hour = remindAt.hour.toString().padLeft(2, '0');
-  final minute = remindAt.minute.toString().padLeft(2, '0');
-  return '${compactDateLabel(remindAt, DateTime.now())} ${timeLabel('$hour:$minute')}';
-}
-
-String _repeatDraftLabel(TaskRepeatDraft? draft) {
-  if (draft == null) {
-    return 'No repeat';
-  }
-  if (draft.frequency == TaskRepeatFrequency.weekly &&
-      draft.weekdays == '1,2,3,4,5') {
-    return 'Weekdays';
-  }
-  return draft.frequency.label;
-}
-
-String _repeatEntryLabel(RecurrenceRuleEntry? entry, String? ruleId) {
-  if (ruleId == null) {
-    return 'No repeat';
-  }
-  if (entry == null) {
-    return 'Repeats';
-  }
-  if (entry.repeatFrequency == TaskRepeatFrequency.weekly.value &&
-      entry.repeatWeekdays == '1,2,3,4,5') {
-    return 'Weekdays';
-  }
-  return TaskRepeatFrequency.fromValue(entry.repeatFrequency).label;
-}
-
-DateTime _combineDateAndTime(DateTime date, String time) {
-  final parts = time.split(':');
-  final hour = parts.isEmpty ? 9 : int.tryParse(parts[0]) ?? 9;
-  final minute = parts.length < 2 ? 0 : int.tryParse(parts[1]) ?? 0;
-  return DateTime(date.year, date.month, date.day, hour, minute);
 }
 
 class _DateChoiceSheet extends StatelessWidget {
@@ -838,83 +731,6 @@ class _GroupChoiceSheet extends StatelessWidget {
             selected: group.id == selectedId,
             onTap: () => Navigator.of(context).pop(group.id),
           ),
-      ],
-    );
-  }
-}
-
-class _ReminderChoiceSheet extends StatelessWidget {
-  const _ReminderChoiceSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return _ChoiceSheet(
-      title: 'Reminder',
-      children: [
-        _ChoiceRow(
-          icon: Icons.notifications_off_outlined,
-          label: 'No reminder',
-          onTap: () => Navigator.of(context).pop(_ReminderChoice.none),
-        ),
-        _ChoiceRow(
-          icon: Icons.wb_sunny_outlined,
-          label: 'Due date morning',
-          onTap: () => Navigator.of(context).pop(_ReminderChoice.morning),
-        ),
-        _ChoiceRow(
-          icon: Icons.notifications_none_rounded,
-          label: 'At due time',
-          onTap: () => Navigator.of(context).pop(_ReminderChoice.atDueTime),
-        ),
-        _ChoiceRow(
-          icon: Icons.timer_outlined,
-          label: '10 min before',
-          onTap: () =>
-              Navigator.of(context).pop(_ReminderChoice.tenMinutesBefore),
-        ),
-        _ChoiceRow(
-          icon: Icons.timer_outlined,
-          label: '1 hour before',
-          onTap: () => Navigator.of(context).pop(_ReminderChoice.oneHourBefore),
-        ),
-      ],
-    );
-  }
-}
-
-class _RepeatChoiceSheet extends StatelessWidget {
-  const _RepeatChoiceSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return _ChoiceSheet(
-      title: 'Repeat',
-      children: [
-        _ChoiceRow(
-          icon: Icons.repeat_on_rounded,
-          label: 'No repeat',
-          onTap: () => Navigator.of(context).pop(_RepeatChoice.none),
-        ),
-        _ChoiceRow(
-          icon: Icons.repeat_rounded,
-          label: 'Daily',
-          onTap: () => Navigator.of(context).pop(_RepeatChoice.daily),
-        ),
-        _ChoiceRow(
-          icon: Icons.work_history_outlined,
-          label: 'Weekdays',
-          onTap: () => Navigator.of(context).pop(_RepeatChoice.weekdays),
-        ),
-        _ChoiceRow(
-          icon: Icons.calendar_view_week_outlined,
-          label: 'Weekly',
-          onTap: () => Navigator.of(context).pop(_RepeatChoice.weekly),
-        ),
-        _ChoiceRow(
-          icon: Icons.calendar_month_outlined,
-          label: 'Monthly',
-          onTap: () => Navigator.of(context).pop(_RepeatChoice.monthly),
-        ),
       ],
     );
   }

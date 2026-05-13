@@ -3230,6 +3230,26 @@ class $RecurrenceRuleEntriesTable extends RecurrenceRuleEntries
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _repeatMonthOrdinalMeta =
+      const VerificationMeta('repeatMonthOrdinal');
+  @override
+  late final GeneratedColumn<int> repeatMonthOrdinal = GeneratedColumn<int>(
+    'repeat_month_ordinal',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _repeatMonthWeekdayMeta =
+      const VerificationMeta('repeatMonthWeekday');
+  @override
+  late final GeneratedColumn<int> repeatMonthWeekday = GeneratedColumn<int>(
+    'repeat_month_weekday',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _repeatEndTypeMeta = const VerificationMeta(
     'repeatEndType',
   );
@@ -3293,6 +3313,8 @@ class $RecurrenceRuleEntriesTable extends RecurrenceRuleEntries
     repeatInterval,
     repeatWeekdays,
     repeatMonthDay,
+    repeatMonthOrdinal,
+    repeatMonthWeekday,
     repeatEndType,
     repeatEndDate,
     repeatOccurrenceCount,
@@ -3351,6 +3373,24 @@ class $RecurrenceRuleEntriesTable extends RecurrenceRuleEntries
         repeatMonthDay.isAcceptableOrUnknown(
           data['repeat_month_day']!,
           _repeatMonthDayMeta,
+        ),
+      );
+    }
+    if (data.containsKey('repeat_month_ordinal')) {
+      context.handle(
+        _repeatMonthOrdinalMeta,
+        repeatMonthOrdinal.isAcceptableOrUnknown(
+          data['repeat_month_ordinal']!,
+          _repeatMonthOrdinalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('repeat_month_weekday')) {
+      context.handle(
+        _repeatMonthWeekdayMeta,
+        repeatMonthWeekday.isAcceptableOrUnknown(
+          data['repeat_month_weekday']!,
+          _repeatMonthWeekdayMeta,
         ),
       );
     }
@@ -3426,6 +3466,14 @@ class $RecurrenceRuleEntriesTable extends RecurrenceRuleEntries
         DriftSqlType.int,
         data['${effectivePrefix}repeat_month_day'],
       ),
+      repeatMonthOrdinal: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}repeat_month_ordinal'],
+      ),
+      repeatMonthWeekday: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}repeat_month_weekday'],
+      ),
       repeatEndType: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}repeat_end_type'],
@@ -3462,6 +3510,8 @@ class RecurrenceRuleEntry extends DataClass
   final int repeatInterval;
   final String? repeatWeekdays;
   final int? repeatMonthDay;
+  final int? repeatMonthOrdinal;
+  final int? repeatMonthWeekday;
   final String repeatEndType;
   final DateTime? repeatEndDate;
   final int? repeatOccurrenceCount;
@@ -3473,6 +3523,8 @@ class RecurrenceRuleEntry extends DataClass
     required this.repeatInterval,
     this.repeatWeekdays,
     this.repeatMonthDay,
+    this.repeatMonthOrdinal,
+    this.repeatMonthWeekday,
     required this.repeatEndType,
     this.repeatEndDate,
     this.repeatOccurrenceCount,
@@ -3490,6 +3542,12 @@ class RecurrenceRuleEntry extends DataClass
     }
     if (!nullToAbsent || repeatMonthDay != null) {
       map['repeat_month_day'] = Variable<int>(repeatMonthDay);
+    }
+    if (!nullToAbsent || repeatMonthOrdinal != null) {
+      map['repeat_month_ordinal'] = Variable<int>(repeatMonthOrdinal);
+    }
+    if (!nullToAbsent || repeatMonthWeekday != null) {
+      map['repeat_month_weekday'] = Variable<int>(repeatMonthWeekday);
     }
     map['repeat_end_type'] = Variable<String>(repeatEndType);
     if (!nullToAbsent || repeatEndDate != null) {
@@ -3514,6 +3572,12 @@ class RecurrenceRuleEntry extends DataClass
       repeatMonthDay: repeatMonthDay == null && nullToAbsent
           ? const Value.absent()
           : Value(repeatMonthDay),
+      repeatMonthOrdinal: repeatMonthOrdinal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repeatMonthOrdinal),
+      repeatMonthWeekday: repeatMonthWeekday == null && nullToAbsent
+          ? const Value.absent()
+          : Value(repeatMonthWeekday),
       repeatEndType: Value(repeatEndType),
       repeatEndDate: repeatEndDate == null && nullToAbsent
           ? const Value.absent()
@@ -3537,6 +3601,8 @@ class RecurrenceRuleEntry extends DataClass
       repeatInterval: serializer.fromJson<int>(json['repeatInterval']),
       repeatWeekdays: serializer.fromJson<String?>(json['repeatWeekdays']),
       repeatMonthDay: serializer.fromJson<int?>(json['repeatMonthDay']),
+      repeatMonthOrdinal: serializer.fromJson<int?>(json['repeatMonthOrdinal']),
+      repeatMonthWeekday: serializer.fromJson<int?>(json['repeatMonthWeekday']),
       repeatEndType: serializer.fromJson<String>(json['repeatEndType']),
       repeatEndDate: serializer.fromJson<DateTime?>(json['repeatEndDate']),
       repeatOccurrenceCount: serializer.fromJson<int?>(
@@ -3555,6 +3621,8 @@ class RecurrenceRuleEntry extends DataClass
       'repeatInterval': serializer.toJson<int>(repeatInterval),
       'repeatWeekdays': serializer.toJson<String?>(repeatWeekdays),
       'repeatMonthDay': serializer.toJson<int?>(repeatMonthDay),
+      'repeatMonthOrdinal': serializer.toJson<int?>(repeatMonthOrdinal),
+      'repeatMonthWeekday': serializer.toJson<int?>(repeatMonthWeekday),
       'repeatEndType': serializer.toJson<String>(repeatEndType),
       'repeatEndDate': serializer.toJson<DateTime?>(repeatEndDate),
       'repeatOccurrenceCount': serializer.toJson<int?>(repeatOccurrenceCount),
@@ -3569,6 +3637,8 @@ class RecurrenceRuleEntry extends DataClass
     int? repeatInterval,
     Value<String?> repeatWeekdays = const Value.absent(),
     Value<int?> repeatMonthDay = const Value.absent(),
+    Value<int?> repeatMonthOrdinal = const Value.absent(),
+    Value<int?> repeatMonthWeekday = const Value.absent(),
     String? repeatEndType,
     Value<DateTime?> repeatEndDate = const Value.absent(),
     Value<int?> repeatOccurrenceCount = const Value.absent(),
@@ -3584,6 +3654,12 @@ class RecurrenceRuleEntry extends DataClass
     repeatMonthDay: repeatMonthDay.present
         ? repeatMonthDay.value
         : this.repeatMonthDay,
+    repeatMonthOrdinal: repeatMonthOrdinal.present
+        ? repeatMonthOrdinal.value
+        : this.repeatMonthOrdinal,
+    repeatMonthWeekday: repeatMonthWeekday.present
+        ? repeatMonthWeekday.value
+        : this.repeatMonthWeekday,
     repeatEndType: repeatEndType ?? this.repeatEndType,
     repeatEndDate: repeatEndDate.present
         ? repeatEndDate.value
@@ -3609,6 +3685,12 @@ class RecurrenceRuleEntry extends DataClass
       repeatMonthDay: data.repeatMonthDay.present
           ? data.repeatMonthDay.value
           : this.repeatMonthDay,
+      repeatMonthOrdinal: data.repeatMonthOrdinal.present
+          ? data.repeatMonthOrdinal.value
+          : this.repeatMonthOrdinal,
+      repeatMonthWeekday: data.repeatMonthWeekday.present
+          ? data.repeatMonthWeekday.value
+          : this.repeatMonthWeekday,
       repeatEndType: data.repeatEndType.present
           ? data.repeatEndType.value
           : this.repeatEndType,
@@ -3631,6 +3713,8 @@ class RecurrenceRuleEntry extends DataClass
           ..write('repeatInterval: $repeatInterval, ')
           ..write('repeatWeekdays: $repeatWeekdays, ')
           ..write('repeatMonthDay: $repeatMonthDay, ')
+          ..write('repeatMonthOrdinal: $repeatMonthOrdinal, ')
+          ..write('repeatMonthWeekday: $repeatMonthWeekday, ')
           ..write('repeatEndType: $repeatEndType, ')
           ..write('repeatEndDate: $repeatEndDate, ')
           ..write('repeatOccurrenceCount: $repeatOccurrenceCount, ')
@@ -3647,6 +3731,8 @@ class RecurrenceRuleEntry extends DataClass
     repeatInterval,
     repeatWeekdays,
     repeatMonthDay,
+    repeatMonthOrdinal,
+    repeatMonthWeekday,
     repeatEndType,
     repeatEndDate,
     repeatOccurrenceCount,
@@ -3662,6 +3748,8 @@ class RecurrenceRuleEntry extends DataClass
           other.repeatInterval == this.repeatInterval &&
           other.repeatWeekdays == this.repeatWeekdays &&
           other.repeatMonthDay == this.repeatMonthDay &&
+          other.repeatMonthOrdinal == this.repeatMonthOrdinal &&
+          other.repeatMonthWeekday == this.repeatMonthWeekday &&
           other.repeatEndType == this.repeatEndType &&
           other.repeatEndDate == this.repeatEndDate &&
           other.repeatOccurrenceCount == this.repeatOccurrenceCount &&
@@ -3676,6 +3764,8 @@ class RecurrenceRuleEntriesCompanion
   final Value<int> repeatInterval;
   final Value<String?> repeatWeekdays;
   final Value<int?> repeatMonthDay;
+  final Value<int?> repeatMonthOrdinal;
+  final Value<int?> repeatMonthWeekday;
   final Value<String> repeatEndType;
   final Value<DateTime?> repeatEndDate;
   final Value<int?> repeatOccurrenceCount;
@@ -3688,6 +3778,8 @@ class RecurrenceRuleEntriesCompanion
     this.repeatInterval = const Value.absent(),
     this.repeatWeekdays = const Value.absent(),
     this.repeatMonthDay = const Value.absent(),
+    this.repeatMonthOrdinal = const Value.absent(),
+    this.repeatMonthWeekday = const Value.absent(),
     this.repeatEndType = const Value.absent(),
     this.repeatEndDate = const Value.absent(),
     this.repeatOccurrenceCount = const Value.absent(),
@@ -3701,6 +3793,8 @@ class RecurrenceRuleEntriesCompanion
     this.repeatInterval = const Value.absent(),
     this.repeatWeekdays = const Value.absent(),
     this.repeatMonthDay = const Value.absent(),
+    this.repeatMonthOrdinal = const Value.absent(),
+    this.repeatMonthWeekday = const Value.absent(),
     this.repeatEndType = const Value.absent(),
     this.repeatEndDate = const Value.absent(),
     this.repeatOccurrenceCount = const Value.absent(),
@@ -3717,6 +3811,8 @@ class RecurrenceRuleEntriesCompanion
     Expression<int>? repeatInterval,
     Expression<String>? repeatWeekdays,
     Expression<int>? repeatMonthDay,
+    Expression<int>? repeatMonthOrdinal,
+    Expression<int>? repeatMonthWeekday,
     Expression<String>? repeatEndType,
     Expression<DateTime>? repeatEndDate,
     Expression<int>? repeatOccurrenceCount,
@@ -3730,6 +3826,10 @@ class RecurrenceRuleEntriesCompanion
       if (repeatInterval != null) 'repeat_interval': repeatInterval,
       if (repeatWeekdays != null) 'repeat_weekdays': repeatWeekdays,
       if (repeatMonthDay != null) 'repeat_month_day': repeatMonthDay,
+      if (repeatMonthOrdinal != null)
+        'repeat_month_ordinal': repeatMonthOrdinal,
+      if (repeatMonthWeekday != null)
+        'repeat_month_weekday': repeatMonthWeekday,
       if (repeatEndType != null) 'repeat_end_type': repeatEndType,
       if (repeatEndDate != null) 'repeat_end_date': repeatEndDate,
       if (repeatOccurrenceCount != null)
@@ -3746,6 +3846,8 @@ class RecurrenceRuleEntriesCompanion
     Value<int>? repeatInterval,
     Value<String?>? repeatWeekdays,
     Value<int?>? repeatMonthDay,
+    Value<int?>? repeatMonthOrdinal,
+    Value<int?>? repeatMonthWeekday,
     Value<String>? repeatEndType,
     Value<DateTime?>? repeatEndDate,
     Value<int?>? repeatOccurrenceCount,
@@ -3759,6 +3861,8 @@ class RecurrenceRuleEntriesCompanion
       repeatInterval: repeatInterval ?? this.repeatInterval,
       repeatWeekdays: repeatWeekdays ?? this.repeatWeekdays,
       repeatMonthDay: repeatMonthDay ?? this.repeatMonthDay,
+      repeatMonthOrdinal: repeatMonthOrdinal ?? this.repeatMonthOrdinal,
+      repeatMonthWeekday: repeatMonthWeekday ?? this.repeatMonthWeekday,
       repeatEndType: repeatEndType ?? this.repeatEndType,
       repeatEndDate: repeatEndDate ?? this.repeatEndDate,
       repeatOccurrenceCount:
@@ -3786,6 +3890,12 @@ class RecurrenceRuleEntriesCompanion
     }
     if (repeatMonthDay.present) {
       map['repeat_month_day'] = Variable<int>(repeatMonthDay.value);
+    }
+    if (repeatMonthOrdinal.present) {
+      map['repeat_month_ordinal'] = Variable<int>(repeatMonthOrdinal.value);
+    }
+    if (repeatMonthWeekday.present) {
+      map['repeat_month_weekday'] = Variable<int>(repeatMonthWeekday.value);
     }
     if (repeatEndType.present) {
       map['repeat_end_type'] = Variable<String>(repeatEndType.value);
@@ -3818,6 +3928,8 @@ class RecurrenceRuleEntriesCompanion
           ..write('repeatInterval: $repeatInterval, ')
           ..write('repeatWeekdays: $repeatWeekdays, ')
           ..write('repeatMonthDay: $repeatMonthDay, ')
+          ..write('repeatMonthOrdinal: $repeatMonthOrdinal, ')
+          ..write('repeatMonthWeekday: $repeatMonthWeekday, ')
           ..write('repeatEndType: $repeatEndType, ')
           ..write('repeatEndDate: $repeatEndDate, ')
           ..write('repeatOccurrenceCount: $repeatOccurrenceCount, ')
@@ -6420,6 +6532,8 @@ typedef $$RecurrenceRuleEntriesTableCreateCompanionBuilder =
       Value<int> repeatInterval,
       Value<String?> repeatWeekdays,
       Value<int?> repeatMonthDay,
+      Value<int?> repeatMonthOrdinal,
+      Value<int?> repeatMonthWeekday,
       Value<String> repeatEndType,
       Value<DateTime?> repeatEndDate,
       Value<int?> repeatOccurrenceCount,
@@ -6434,6 +6548,8 @@ typedef $$RecurrenceRuleEntriesTableUpdateCompanionBuilder =
       Value<int> repeatInterval,
       Value<String?> repeatWeekdays,
       Value<int?> repeatMonthDay,
+      Value<int?> repeatMonthOrdinal,
+      Value<int?> repeatMonthWeekday,
       Value<String> repeatEndType,
       Value<DateTime?> repeatEndDate,
       Value<int?> repeatOccurrenceCount,
@@ -6473,6 +6589,16 @@ class $$RecurrenceRuleEntriesTableFilterComposer
 
   ColumnFilters<int> get repeatMonthDay => $composableBuilder(
     column: $table.repeatMonthDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get repeatMonthOrdinal => $composableBuilder(
+    column: $table.repeatMonthOrdinal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get repeatMonthWeekday => $composableBuilder(
+    column: $table.repeatMonthWeekday,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -6536,6 +6662,16 @@ class $$RecurrenceRuleEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get repeatMonthOrdinal => $composableBuilder(
+    column: $table.repeatMonthOrdinal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get repeatMonthWeekday => $composableBuilder(
+    column: $table.repeatMonthWeekday,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get repeatEndType => $composableBuilder(
     column: $table.repeatEndType,
     builder: (column) => ColumnOrderings(column),
@@ -6591,6 +6727,16 @@ class $$RecurrenceRuleEntriesTableAnnotationComposer
 
   GeneratedColumn<int> get repeatMonthDay => $composableBuilder(
     column: $table.repeatMonthDay,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get repeatMonthOrdinal => $composableBuilder(
+    column: $table.repeatMonthOrdinal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get repeatMonthWeekday => $composableBuilder(
+    column: $table.repeatMonthWeekday,
     builder: (column) => column,
   );
 
@@ -6667,6 +6813,8 @@ class $$RecurrenceRuleEntriesTableTableManager
                 Value<int> repeatInterval = const Value.absent(),
                 Value<String?> repeatWeekdays = const Value.absent(),
                 Value<int?> repeatMonthDay = const Value.absent(),
+                Value<int?> repeatMonthOrdinal = const Value.absent(),
+                Value<int?> repeatMonthWeekday = const Value.absent(),
                 Value<String> repeatEndType = const Value.absent(),
                 Value<DateTime?> repeatEndDate = const Value.absent(),
                 Value<int?> repeatOccurrenceCount = const Value.absent(),
@@ -6679,6 +6827,8 @@ class $$RecurrenceRuleEntriesTableTableManager
                 repeatInterval: repeatInterval,
                 repeatWeekdays: repeatWeekdays,
                 repeatMonthDay: repeatMonthDay,
+                repeatMonthOrdinal: repeatMonthOrdinal,
+                repeatMonthWeekday: repeatMonthWeekday,
                 repeatEndType: repeatEndType,
                 repeatEndDate: repeatEndDate,
                 repeatOccurrenceCount: repeatOccurrenceCount,
@@ -6693,6 +6843,8 @@ class $$RecurrenceRuleEntriesTableTableManager
                 Value<int> repeatInterval = const Value.absent(),
                 Value<String?> repeatWeekdays = const Value.absent(),
                 Value<int?> repeatMonthDay = const Value.absent(),
+                Value<int?> repeatMonthOrdinal = const Value.absent(),
+                Value<int?> repeatMonthWeekday = const Value.absent(),
                 Value<String> repeatEndType = const Value.absent(),
                 Value<DateTime?> repeatEndDate = const Value.absent(),
                 Value<int?> repeatOccurrenceCount = const Value.absent(),
@@ -6705,6 +6857,8 @@ class $$RecurrenceRuleEntriesTableTableManager
                 repeatInterval: repeatInterval,
                 repeatWeekdays: repeatWeekdays,
                 repeatMonthDay: repeatMonthDay,
+                repeatMonthOrdinal: repeatMonthOrdinal,
+                repeatMonthWeekday: repeatMonthWeekday,
                 repeatEndType: repeatEndType,
                 repeatEndDate: repeatEndDate,
                 repeatOccurrenceCount: repeatOccurrenceCount,

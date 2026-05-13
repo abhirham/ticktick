@@ -158,6 +158,46 @@ void main() {
     expect(yearlyNext.recurrenceOccurrenceDate, DateTime(2029, 2, 28));
   });
 
+  test('monthly rules support positional weekdays like last Friday', () async {
+    final lastFriday = await repository.createTask(
+      TaskDraft(
+        title: 'Close books',
+        dueDate: DateTime(2026, 5, 29),
+        repeatRule: const TaskRepeatDraft(
+          frequency: TaskRepeatFrequency.monthly,
+          monthOrdinal: -1,
+          monthWeekday: DateTime.friday,
+        ),
+      ),
+    );
+    final secondTuesday = await repository.createTask(
+      TaskDraft(
+        title: 'Report',
+        dueDate: DateTime(2026, 5, 12),
+        repeatRule: const TaskRepeatDraft(
+          frequency: TaskRepeatFrequency.monthly,
+          interval: 2,
+          monthOrdinal: 2,
+          monthWeekday: DateTime.tuesday,
+        ),
+      ),
+    );
+
+    await repository.completeTask(lastFriday.id);
+    await repository.completeTask(secondTuesday.id);
+
+    final open = await repository.watchAllOpenTasks().first;
+    final lastFridayNext = open.singleWhere(
+      (item) => item.recurrenceParentTaskId == lastFriday.id,
+    );
+    final secondTuesdayNext = open.singleWhere(
+      (item) => item.recurrenceParentTaskId == secondTuesday.id,
+    );
+
+    expect(lastFridayNext.recurrenceOccurrenceDate, DateTime(2026, 6, 26));
+    expect(secondTuesdayNext.recurrenceOccurrenceDate, DateTime(2026, 7, 14));
+  });
+
   test('end date and occurrence count stop future generation', () async {
     final endedByDate = await repository.createTask(
       TaskDraft(
