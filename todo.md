@@ -11,18 +11,18 @@
 
 ## Task Basics
 
-- [ ] Finish create, edit, complete, delete, restore, and permanently delete flows across all task screens.
-- [ ] Make sure normal tasks can be created with title-only input.
-- [ ] Add complete task editing for due date, due time, priority, list, group, reminder, repeat rule, and description.
-- [ ] Add undo snackbar for common destructive actions where appropriate.
-- [ ] Confirm completed tasks remain visible in Completed and deleted tasks remain visible in Trash.
+- [ ] [in progress: codex/task-basics] Finish create, edit, complete, delete, restore, and permanently delete flows across all task screens.
+- [ ] [in progress: codex/task-basics] Make sure normal tasks can be created with title-only input.
+- [ ] [in progress: codex/task-basics] Add complete task editing for due date, due time, priority, list, group, reminder, repeat rule, and description.
+- [ ] [in progress: codex/task-basics] Add undo snackbar for common destructive actions where appropriate.
+- [ ] [in progress: codex/task-basics] Confirm completed tasks remain visible in Completed and deleted tasks remain visible in Trash.
 
 ## Lists And Groups
 
-- [ ] Implement create, rename, delete, and reorder lists.
-- [ ] Implement list colors and optional list icons.
-- [ ] Implement create, rename, delete, collapse, expand, and reorder groups.
-- [ ] Implement moving tasks between groups.
+- [ ] [in progress: codex/lists-groups] Implement create, rename, delete, and reorder lists.
+- [ ] [in progress: codex/lists-groups] Implement list colors and optional list icons.
+- [ ] [in progress: codex/lists-groups] Implement create, rename, delete, collapse, expand, and reorder groups.
+- [ ] [in progress: codex/lists-groups] Implement moving tasks between groups.
 - [ ] Add the delete-group choice flow: move tasks to Ungrouped, delete tasks, or move tasks to another group.
 - [ ] Keep Ungrouped visible for every list.
 - [ ] Add list grouping modes: manual, due date, priority, status, persistent vs normal, and none.
@@ -30,7 +30,7 @@
 
 ## Natural Language Entry
 
-- [ ] Expand parser coverage for all examples in `docs/NATURAL_LANGUAGE_SPEC.md`.
+- [ ] [in progress: codex/natural-language] Expand parser coverage for all examples in `docs/NATURAL_LANGUAGE_SPEC.md`.
 - [ ] Add editable parsed chips for date, time, repeat, reminder, priority, list, group, and persistent.
 - [ ] Support removing parsed chips before saving.
 - [ ] Add list/group confirmation or warning behavior when parsed list/group does not exist.
@@ -39,12 +39,12 @@
 
 ## Persistent Tasks
 
-- [ ] Finish "Keep in Today until complete" toggle in add and detail flows.
-- [ ] Ensure persistent no-date tasks always appear in Today while open.
-- [ ] Show persistent badges and carried-forward labels.
-- [ ] Implement carried-forward count updates.
-- [ ] Add settings for persistent visibility, carried-forward count, and persistent task position.
-- [ ] Test persistent tasks created yesterday, completed persistent tasks, due-date preservation, and natural-language persistent triggers.
+- [ ] [in progress: codex/task-basics] Finish "Keep in Today until complete" toggle in add and detail flows.
+- [ ] [in progress: codex/task-basics] Ensure persistent no-date tasks always appear in Today while open.
+- [ ] [in progress: codex/task-basics] Show persistent badges and carried-forward labels.
+- [ ] [in progress: codex/task-basics] Implement carried-forward count updates.
+- [ ] [in progress: codex/settings] Add settings for persistent visibility, carried-forward count, and persistent task position.
+- [ ] [in progress: codex/task-basics] Test persistent tasks created yesterday, completed persistent tasks, due-date preservation, and natural-language persistent triggers.
 
 ## Repeating Tasks
 
@@ -70,21 +70,21 @@
 
 ## Calendar
 
-- [ ] Finish Month, Week, Day, and Agenda views.
-- [ ] Show normal due tasks, recurrence occurrences, and persistent tasks with due dates on correct calendar dates.
-- [ ] Exclude overdue tasks from today unless due date is actually today.
-- [ ] Exclude persistent no-date tasks from calendar blocks.
-- [ ] Add date tap to create task for that date.
-- [ ] Add task move-to-date and clear-date behavior.
-- [ ] Add calendar settings for first day of week, default view, and completed visibility.
-- [ ] Add calendar query tests.
+- [ ] [in progress: codex/calendar] Finish Month, Week, Day, and Agenda views.
+- [ ] [in progress: codex/calendar] Show normal due tasks, recurrence occurrences, and persistent tasks with due dates on correct calendar dates.
+- [ ] [in progress: codex/calendar] Exclude overdue tasks from today unless due date is actually today.
+- [ ] [in progress: codex/calendar] Exclude persistent no-date tasks from calendar blocks.
+- [ ] [in progress: codex/calendar] Add date tap to create task for that date.
+- [ ] [in progress: codex/calendar] Add task move-to-date and clear-date behavior.
+- [ ] [in progress: codex/settings] Add calendar settings for first day of week, default view, and completed visibility.
+- [ ] [in progress: codex/calendar] Add calendar query tests.
 
 ## Today Widget
 
-- [ ] Finish `WidgetDataService` summary generation.
-- [ ] Persist widget-safe snapshots with due-today count, generated time, timezone, and next due-today task titles.
-- [ ] Ensure widget count includes only open tasks with `dueDate == today`.
-- [ ] Exclude overdue, completed, deleted, future, no-date, and persistent no-date tasks from widget count.
+- [ ] [in progress: codex/widget-data] Finish `WidgetDataService` summary generation.
+- [ ] [in progress: codex/widget-data] Persist widget-safe snapshots with due-today count, generated time, timezone, and next due-today task titles.
+- [ ] [in progress: codex/widget-data] Ensure widget count includes only open tasks with `dueDate == today`.
+- [ ] [in progress: codex/widget-data] Exclude overdue, completed, deleted, future, no-date, and persistent no-date tasks from widget count.
 - [ ] Implement iOS WidgetKit home-screen and lock-screen widgets.
 - [ ] Implement Android home-screen App Widget.
 - [ ] Add Android lock-screen support only where OS/device allows it.
@@ -95,9 +95,9 @@
 
 ## Settings
 
-- [ ] Finish settings persistence for theme, reminders, today behavior, calendar, widget, recurrence overdue behavior, default list, and default grouping.
-- [ ] Confirm light, dark, and system theme modes work.
-- [ ] Add settings screen tests for toggles, option rows, and persistence.
+- [ ] [in progress: codex/settings] Finish settings persistence for theme, reminders, today behavior, calendar, widget, recurrence overdue behavior, default list, and default grouping.
+- [ ] [in progress: codex/settings] Confirm light, dark, and system theme modes work.
+- [ ] [in progress: codex/settings] Add settings screen tests for toggles, option rows, and persistence.
 
 ## Native Platform
 
