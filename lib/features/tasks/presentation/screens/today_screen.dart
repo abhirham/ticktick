@@ -43,7 +43,7 @@ class TodayScreen extends ConsumerWidget {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 40, 16, 132),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 124),
               children: [
                 overdueTasks.when(
                   data: (tasks) => TaskSectionCard(

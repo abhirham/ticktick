@@ -5,8 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/providers.dart';
 import '../../../../app/theme.dart';
 import '../../../../core/time/flow_date_utils.dart';
+import '../../../../shared/presentation/flow_action_button.dart';
+import '../../../../shared/presentation/flow_bottom_sheet.dart';
+import '../../../../shared/presentation/flow_date_picker.dart';
 import '../../application/task_providers.dart';
 import '../../domain/task_enums.dart';
+import '../widgets/priority_sheet.dart';
 import '../widgets/task_widgets.dart';
 
 class TaskDetailScreen extends ConsumerStatefulWidget {
@@ -94,21 +98,19 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                                   'Inbox',
                                   style: TextStyle(
                                     color: colors.textMuted,
-                                    fontSize: 20,
+                                    fontSize: 16.5,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
-                              TextButton(
-                                onPressed: _pickDate,
-                                child: Text(
-                                  _dueDate == null
-                                      ? 'No date'
-                                      : compactDateLabel(
-                                          _dueDate!,
-                                          DateTime.now(),
-                                        ),
-                                ),
+                              _InlineDateAction(
+                                label: _dueDate == null
+                                    ? 'No date'
+                                    : compactDateLabel(
+                                        _dueDate!,
+                                        DateTime.now(),
+                                      ),
+                                onTap: _pickDate,
                               ),
                             ],
                           ),
@@ -118,12 +120,17 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                             cursorColor: colors.primary,
                             style: TextStyle(
                               color: colors.textStrong,
-                              fontSize: 34,
+                              fontSize: 27,
                               fontWeight: FontWeight.w700,
                               height: 1.2,
                             ),
                             decoration: const InputDecoration(
                               hintText: 'Title',
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              isCollapsed: true,
+                              contentPadding: EdgeInsets.zero,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -132,9 +139,14 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                             cursorColor: colors.primary,
                             minLines: 2,
                             maxLines: 5,
-                            style: TextStyle(color: colors.text, fontSize: 21),
+                            style: TextStyle(color: colors.text, fontSize: 17),
                             decoration: const InputDecoration(
                               hintText: 'Description',
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              isCollapsed: true,
+                              contentPadding: EdgeInsets.zero,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -164,67 +176,52 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: colors.primaryBright,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size.fromHeight(56),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
+                    FlowActionButton(
+                      primary: true,
+                      icon: Icons.save_outlined,
+                      label: 'Save Changes',
                       onPressed: _save,
-                      icon: const Icon(Icons.save_outlined),
-                      label: const Text('Save Changes'),
                     ),
                     const SizedBox(height: 10),
                     if (status == TaskStatus.deleted) ...[
-                      OutlinedButton.icon(
+                      FlowActionButton(
+                        icon: Icons.restore_rounded,
+                        label: 'Restore Task',
                         onPressed: () async {
                           await ref
                               .read(taskRepositoryProvider)
                               .restoreTask(task.id);
                           if (context.mounted) context.go('/trash');
                         },
-                        icon: const Icon(Icons.restore_rounded),
-                        label: const Text('Restore Task'),
                       ),
                       const SizedBox(height: 10),
-                      TextButton.icon(
+                      FlowActionButton(
+                        icon: Icons.delete_forever,
+                        label: 'Delete Forever',
+                        destructive: true,
                         onPressed: () => _confirmPermanentDelete(task.id),
-                        icon: Icon(Icons.delete_forever, color: colors.danger),
-                        label: Text(
-                          'Delete Forever',
-                          style: TextStyle(color: colors.danger),
-                        ),
                       ),
                     ] else ...[
-                      OutlinedButton.icon(
+                      FlowActionButton(
+                        icon: status == TaskStatus.completed
+                            ? Icons.replay_rounded
+                            : Icons.check_rounded,
+                        label: status == TaskStatus.completed
+                            ? 'Reopen Task'
+                            : 'Mark Complete',
                         onPressed: () => _toggleStatus(status),
-                        icon: Icon(
-                          status == TaskStatus.completed
-                              ? Icons.replay_rounded
-                              : Icons.check_rounded,
-                        ),
-                        label: Text(
-                          status == TaskStatus.completed
-                              ? 'Reopen Task'
-                              : 'Mark Complete',
-                        ),
                       ),
                       const SizedBox(height: 10),
-                      TextButton.icon(
+                      FlowActionButton(
+                        icon: Icons.delete_outline,
+                        label: 'Move to Trash',
+                        destructive: true,
                         onPressed: () async {
                           await ref
                               .read(taskRepositoryProvider)
                               .moveTaskToTrash(task.id);
                           if (context.mounted) context.go('/trash');
                         },
-                        icon: Icon(Icons.delete_outline, color: colors.danger),
-                        label: Text(
-                          'Move to Trash',
-                          style: TextStyle(color: colors.danger),
-                        ),
                       ),
                     ],
                   ],
@@ -239,7 +236,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showFlowDatePicker(
       context: context,
       initialDate: _dueDate ?? now,
       firstDate: DateTime(now.year - 1),
@@ -251,29 +248,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   }
 
   Future<void> _showPriorityMenu() async {
-    final selected = await showModalBottomSheet<TaskPriority>(
-      context: context,
-      builder: (context) {
-        final colors = context.colors;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final priority in TaskPriority.values)
-                  ListTile(
-                    textColor: colors.text,
-                    iconColor: colors.iconMuted,
-                    leading: const Icon(Icons.flag_outlined),
-                    title: Text(priority.label),
-                    onTap: () => Navigator.of(context).pop(priority),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
+    final selected = await showTaskPrioritySheet(
+      context,
+      selectedPriority: _priority,
     );
     if (selected != null) {
       setState(() => _priority = selected);
@@ -328,26 +305,9 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   }
 
   Future<void> _confirmPermanentDelete(String taskId) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showFlowBottomSheet<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Delete forever?'),
-          content: const Text(
-            'This permanently removes the task from FlowTask.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('Delete'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => const _DeleteForeverSheet(),
     );
     if (confirmed == true) {
       await ref.read(taskRepositoryProvider).permanentlyDeleteTask(taskId);
@@ -374,16 +334,131 @@ class _DetailActionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return TextButton.icon(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: active ? colors.primary : colors.textMuted,
-        backgroundColor: active ? colors.surfaceSelected : colors.surfaceRaised,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    final foreground = active ? colors.primary : colors.textMuted;
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        decoration: BoxDecoration(
+          color: active ? colors.surfaceSelected : colors.surfaceRaised,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: foreground, size: 17),
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 138),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      icon: Icon(icon, size: 20),
-      label: Text(label),
+    );
+  }
+}
+
+class _InlineDateAction extends StatelessWidget {
+  const _InlineDateAction({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        height: 35,
+        constraints: const BoxConstraints(maxWidth: 122),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: colors.surfaceRaised,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: colors.primary,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeleteForeverSheet extends StatelessWidget {
+  const _DeleteForeverSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return FlowBottomSheetSurface(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 22),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Delete forever?',
+            style: TextStyle(
+              color: colors.textStrong,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'This permanently removes the task from FlowTask.',
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 14.5,
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Row(
+            children: [
+              Expanded(
+                child: FlowActionButton(
+                  icon: Icons.close_rounded,
+                  label: 'Cancel',
+                  onPressed: () => Navigator.of(context).pop(false),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: FlowActionButton(
+                  icon: Icons.delete_forever,
+                  label: 'Delete',
+                  destructive: true,
+                  onPressed: () => Navigator.of(context).pop(true),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -396,7 +471,7 @@ class _PersistentHelperText extends StatelessWidget {
     final colors = context.colors;
     return Text(
       'This task will stay in Today until completed.',
-      style: TextStyle(color: colors.textMuted, fontSize: 16),
+      style: TextStyle(color: colors.textMuted, fontSize: 13.5),
     );
   }
 }
@@ -415,10 +490,17 @@ class _MissingTask extends StatelessWidget {
         children: [
           Text(
             'Task not found',
-            style: TextStyle(color: colors.text, fontSize: 24),
+            style: TextStyle(color: colors.text, fontSize: 20),
           ),
           const SizedBox(height: 12),
-          TextButton(onPressed: onBack, child: const Text('Back to Lists')),
+          SizedBox(
+            width: 220,
+            child: FlowActionButton(
+              icon: Icons.arrow_back_rounded,
+              label: 'Back to Lists',
+              onPressed: onBack,
+            ),
+          ),
         ],
       ),
     );

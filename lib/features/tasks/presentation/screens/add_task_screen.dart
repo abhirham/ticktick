@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/providers.dart';
 import '../../../../app/theme.dart';
 import '../../../../core/time/flow_date_utils.dart';
+import '../../../../shared/presentation/flow_action_button.dart';
+import '../../../../shared/presentation/flow_date_picker.dart';
 import '../../domain/task_draft.dart';
 import '../../domain/task_enums.dart';
+import '../widgets/priority_sheet.dart';
 import '../widgets/task_widgets.dart';
 
 class AddTaskScreen extends ConsumerStatefulWidget {
@@ -64,11 +67,16 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                         cursorColor: colors.primary,
                         style: TextStyle(
                           color: colors.textStrong,
-                          fontSize: 28,
+                          fontSize: 23,
                           height: 1.25,
                         ),
                         decoration: const InputDecoration(
                           hintText: 'What would you like to do?',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          isCollapsed: true,
+                          contentPadding: EdgeInsets.zero,
                         ),
                         textInputAction: TextInputAction.next,
                       ),
@@ -78,9 +86,14 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                         cursorColor: colors.primary,
                         minLines: 1,
                         maxLines: 3,
-                        style: TextStyle(color: colors.text, fontSize: 21),
+                        style: TextStyle(color: colors.text, fontSize: 17),
                         decoration: const InputDecoration(
                           hintText: 'Description',
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          isCollapsed: true,
+                          contentPadding: EdgeInsets.zero,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -122,18 +135,11 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.primaryBright,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
+                FlowActionButton(
+                  primary: true,
+                  icon: Icons.check_rounded,
+                  label: 'Save Task',
                   onPressed: _save,
-                  icon: const Icon(Icons.check_rounded),
-                  label: const Text('Save Task'),
                 ),
               ],
             ),
@@ -145,7 +151,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
-    final picked = await showDatePicker(
+    final picked = await showFlowDatePicker(
       context: context,
       initialDate: _dueDate ?? now,
       firstDate: DateTime(now.year - 1),
@@ -157,29 +163,9 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
   }
 
   Future<void> _showPriorityMenu() async {
-    final selected = await showModalBottomSheet<TaskPriority>(
-      context: context,
-      builder: (context) {
-        final colors = context.colors;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final priority in TaskPriority.values)
-                  ListTile(
-                    textColor: colors.text,
-                    iconColor: colors.iconMuted,
-                    leading: const Icon(Icons.flag_outlined),
-                    title: Text(priority.label),
-                    onTap: () => Navigator.of(context).pop(priority),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
+    final selected = await showTaskPrioritySheet(
+      context,
+      selectedPriority: _priority,
     );
     if (selected != null) {
       setState(() => _priority = selected);
@@ -229,16 +215,38 @@ class _ChipButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return TextButton.icon(
-      onPressed: onPressed,
-      style: TextButton.styleFrom(
-        foregroundColor: active ? colors.primary : colors.textMuted,
-        backgroundColor: active ? colors.surfaceSelected : colors.surfaceRaised,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    final foreground = active ? colors.primary : colors.textMuted;
+    return InkWell(
+      onTap: onPressed,
+      borderRadius: BorderRadius.circular(999),
+      child: Container(
+        height: 36,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        decoration: BoxDecoration(
+          color: active ? colors.surfaceSelected : colors.surfaceRaised,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: foreground, size: 17),
+            const SizedBox(width: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 138),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-      icon: Icon(icon, size: 20),
-      label: Text(label),
     );
   }
 }

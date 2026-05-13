@@ -22,16 +22,16 @@ class FlowShell extends ConsumerWidget {
       drawer: const FlowDrawer(),
       body: child,
       floatingActionButton: Container(
-        width: 56,
-        height: 56,
+        width: 50,
+        height: 50,
         margin: const EdgeInsets.only(right: 6, bottom: 10),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
               color: colors.primary.withValues(alpha: 0.28),
-              blurRadius: 28,
-              offset: const Offset(0, 8),
+              blurRadius: 22,
+              offset: const Offset(0, 7),
             ),
           ],
         ),
@@ -43,12 +43,12 @@ class FlowShell extends ConsumerWidget {
           elevation: 0,
           shape: const CircleBorder(),
           onPressed: () => showQuickAddSheet(context),
-          child: const Icon(Icons.add_rounded, size: 34),
+          child: const Icon(Icons.add_rounded, size: 30),
         ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
-        height: 58 + MediaQuery.paddingOf(context).bottom,
+        height: 50 + MediaQuery.paddingOf(context).bottom,
         color: colors.bg,
         padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom),
         child: Row(
@@ -111,11 +111,11 @@ class _BottomNavIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return SizedBox(
-      width: 56,
-      height: 56,
+      width: 50,
+      height: 50,
       child: IconButton(
         tooltip: tooltip,
-        iconSize: active ? 34 : 30,
+        iconSize: active ? 30 : 26,
         onPressed: onPressed,
         color: active ? colors.primary : colors.iconMuted,
         icon: Icon(icon),
@@ -155,13 +155,13 @@ class FlowDrawer extends ConsumerWidget {
                       clipBehavior: Clip.none,
                       children: [
                         CircleAvatar(
-                          radius: 20,
+                          radius: 17,
                           backgroundColor: colors.primary,
                           child: Text(
                             'A',
                             style: TextStyle(
                               color: colors.textStrong,
-                              fontSize: 20,
+                              fontSize: 17,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -170,8 +170,8 @@ class FlowDrawer extends ConsumerWidget {
                           top: -3,
                           right: -5,
                           child: Container(
-                            width: 16,
-                            height: 16,
+                            width: 15,
+                            height: 15,
                             decoration: const BoxDecoration(
                               color: Color(0xFFD9D9D9),
                               shape: BoxShape.circle,
@@ -179,13 +179,13 @@ class FlowDrawer extends ConsumerWidget {
                             child: Icon(
                               Icons.workspace_premium_rounded,
                               color: colors.surface,
-                              size: 11,
+                              size: 10,
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(width: 20),
+                    const SizedBox(width: 18),
                     Expanded(
                       child: Text(
                         'Abhirham Savarap',
@@ -194,24 +194,24 @@ class FlowDrawer extends ConsumerWidget {
                         style: TextStyle(
                           color: colors.textStrong,
                           fontWeight: FontWeight.w700,
-                          fontSize: 18,
+                          fontSize: 16,
                           height: 1.2,
                         ),
                       ),
                     ),
-                    Icon(Icons.search_rounded, color: colors.icon, size: 28),
-                    const SizedBox(width: 18),
+                    Icon(Icons.search_rounded, color: colors.icon, size: 24),
+                    const SizedBox(width: 15),
                     Icon(
                       Icons.notifications_none_rounded,
                       color: colors.icon,
-                      size: 28,
+                      size: 24,
                     ),
-                    const SizedBox(width: 18),
-                    Icon(Icons.hexagon_outlined, color: colors.icon, size: 28),
+                    const SizedBox(width: 15),
+                    Icon(Icons.hexagon_outlined, color: colors.icon, size: 24),
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
               _DrawerItem(
                 icon: Icons.calendar_month_rounded,
                 label: 'Today',
@@ -266,7 +266,7 @@ class FlowDrawer extends ConsumerWidget {
                     style: TextButton.styleFrom(
                       foregroundColor: colors.text,
                       textStyle: const TextStyle(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -313,13 +313,13 @@ class _DrawerItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 13),
           decoration: BoxDecoration(
             color: active ? colors.surfaceSelected : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
@@ -329,9 +329,9 @@ class _DrawerItem extends StatelessWidget {
               Icon(
                 icon,
                 color: active || blueIcon ? colors.primary : colors.icon,
-                size: 22,
+                size: 20,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   label,
@@ -339,14 +339,14 @@ class _DrawerItem extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.text,
-                    fontSize: 18,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Text(
                 '$count',
-                style: TextStyle(color: colors.textMuted, fontSize: 16),
+                style: TextStyle(color: colors.textMuted, fontSize: 14.5),
               ),
             ],
           ),

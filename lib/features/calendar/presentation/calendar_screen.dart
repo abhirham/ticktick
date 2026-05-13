@@ -6,7 +6,7 @@ import '../../../app/providers.dart';
 import '../../../app/theme.dart';
 import '../../../core/time/flow_date_utils.dart';
 import '../../tasks/application/task_providers.dart';
-import '../../tasks/domain/task_draft.dart';
+import '../../tasks/presentation/widgets/quick_add_sheet.dart';
 import '../../tasks/presentation/widgets/task_widgets.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -29,7 +29,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       child: Column(
         children: [
           FlowTaskPageHeader(
-            title: 'Calendar',
+            title: _monthTitle(_selectedDate),
             leading: FlowIconButton(
               icon: Icons.menu_rounded,
               tooltip: 'Open navigation',
@@ -73,18 +73,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.primaryBright,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size.fromHeight(56),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  onPressed: _createTaskForSelectedDate,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Create Task on Date'),
+                _CalendarAddRow(
+                  date: _selectedDate,
+                  onTap: _createTaskForSelectedDate,
                 ),
               ],
             ),
@@ -94,40 +85,30 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Future<void> _createTaskForSelectedDate() async {
-    final controller = TextEditingController();
-    final title = await showModalBottomSheet<String>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        final colors = context.colors;
-        return Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            28,
-            16,
-            MediaQuery.viewInsetsOf(context).bottom + 24,
-          ),
-          child: TextField(
-            controller: controller,
-            autofocus: true,
-            cursorColor: colors.primary,
-            style: TextStyle(color: colors.textStrong, fontSize: 28),
-            decoration: const InputDecoration(
-              hintText: 'What would you like to do?',
-            ),
-            onSubmitted: (value) => Navigator.of(context).pop(value),
-          ),
-        );
-      },
+  Future<void> _createTaskForSelectedDate() {
+    return showQuickAddSheet(
+      context,
+      initialDueDate: _selectedDate,
+      dateLabel: compactDateLabel(_selectedDate, DateTime.now()),
     );
-    controller.dispose();
-    if (title == null || title.trim().isEmpty) {
-      return;
-    }
-    await ref
-        .read(taskRepositoryProvider)
-        .createTask(TaskDraft(title: title, dueDate: _selectedDate));
+  }
+
+  String _monthTitle(DateTime date) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return months[date.month - 1];
   }
 }
 
@@ -141,12 +122,8 @@ class _WeekStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = dateOnly(DateTime.now());
     final start = today.subtract(Duration(days: today.weekday % 7));
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surface,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      padding: const EdgeInsets.all(12),
+    return SizedBox(
+      height: 64,
       child: Row(
         children: [
           for (var index = 0; index < 7; index++)
@@ -157,6 +134,7 @@ class _WeekStrip extends StatelessWidget {
                   selectedDate,
                   start.add(Duration(days: index)),
                 ),
+                today: isSameLocalDate(today, start.add(Duration(days: index))),
                 onTap: () => onSelected(start.add(Duration(days: index))),
               ),
             ),
@@ -170,11 +148,13 @@ class _DatePill extends StatelessWidget {
   const _DatePill({
     required this.date,
     required this.selected,
+    required this.today,
     required this.onTap,
   });
 
   final DateTime date;
   final bool selected;
+  final bool today;
   final VoidCallback onTap;
 
   @override
@@ -182,15 +162,10 @@ class _DatePill extends StatelessWidget {
     final colors = context.colors;
     const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
     return InkWell(
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
-      child: Container(
+      child: SizedBox(
         height: 64,
-        margin: const EdgeInsets.symmetric(horizontal: 3),
-        decoration: BoxDecoration(
-          color: selected ? colors.surfaceSelected : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -199,16 +174,82 @@ class _DatePill extends StatelessWidget {
               style: TextStyle(
                 color: selected ? colors.primary : colors.textMuted,
                 fontWeight: FontWeight.w700,
+                fontSize: 13,
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              '${date.day}',
-              style: TextStyle(
-                color: selected ? colors.textStrong : colors.text,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
+            Container(
+              width: 34,
+              height: 34,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected
+                    ? colors.primary
+                    : today
+                    ? colors.textStrong
+                    : Colors.transparent,
+                shape: BoxShape.circle,
               ),
+              child: Text(
+                '${date.day}',
+                style: TextStyle(
+                  color: selected
+                      ? colors.textStrong
+                      : today
+                      ? colors.primary
+                      : colors.text,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CalendarAddRow extends StatelessWidget {
+  const _CalendarAddRow({required this.date, required this.onTap});
+
+  final DateTime date;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.add_box_outlined, color: colors.icon, size: 23),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Add task',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              compactDateLabel(date, DateTime.now()),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: colors.textMuted, fontSize: 14.5),
             ),
           ],
         ),

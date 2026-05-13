@@ -94,7 +94,7 @@ class ListsScreen extends ConsumerWidget {
                           'Loading lists...',
                           style: TextStyle(
                             color: colors.textMuted,
-                            fontSize: 20,
+                            fontSize: 16,
                           ),
                         ),
                       ),
@@ -102,7 +102,7 @@ class ListsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         child: Text(
                           '$error',
-                          style: TextStyle(color: colors.danger, fontSize: 18),
+                          style: TextStyle(color: colors.danger, fontSize: 15),
                         ),
                       ),
                     ),
@@ -139,7 +139,7 @@ class _ListPanel extends StatelessWidget {
             title,
             style: TextStyle(
               color: colors.text,
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -171,24 +171,32 @@ class _ListTileRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(14),
       onTap: onTap,
       child: SizedBox(
-        height: 62,
+        height: 52,
         child: Row(
           children: [
-            Icon(icon, color: colors.icon, size: 28),
+            Icon(icon, color: colors.icon, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: colors.text,
-                  fontSize: 23,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
-            Text(
-              '$count',
-              style: TextStyle(color: colors.textMuted, fontSize: 22),
+            SizedBox(
+              width: 48,
+              child: Text(
+                '$count',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.right,
+                style: TextStyle(color: colors.textMuted, fontSize: 17),
+              ),
             ),
             const SizedBox(width: 4),
             Icon(Icons.chevron_right_rounded, color: colors.textMuted),

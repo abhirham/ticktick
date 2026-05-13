@@ -176,7 +176,8 @@ Flutter calibration note:
 
 - On the audited Samsung `SM-S938W` with Android font scale `0.9`, Flutter `Text`/`TextField` logical font sizes render visually larger than the static screenshot estimates for bottom sheets.
 - Preserve the screenshot proportions over raw table values when they conflict during device checks.
-- Current FlowTask visual-match sizes: task rows `19`, section headers `19`, quick-add title input `22`, quick-add description `17`, quick-add toolbar label `17`, task-detail header/date `20`, and task-detail title `28`.
+- Current FlowTask visual-match sizes after the May 12 phone comparison pass: app page titles `27`, task rows `17`, section headers `17`, task date metadata `12.5`, drawer nav labels `16`, drawer counts `14.5`, quick-add title input `20.5`, quick-add description `15`, quick-add toolbar label `15`, task-detail header/date `17`, and task-detail title `24.5`.
+- The raw typography table above records screenshot estimates, but the calibrated Flutter sizes in this note are the source of truth for implementation on the audited Samsung phone. If the live app looks too large, prefer this calibration note over the table.
 - Keep plain bottom-sheet inputs collapsed with zero content padding; default Flutter input padding makes the quick-add sheet too tall.
 
 Line height:
@@ -237,13 +238,13 @@ Observed spacing:
 - Drawer horizontal padding: approximate value `24px`.
   Confidence: Medium.
   Reason: Avatar and row icons sit farther from edge than main list checkboxes.
-- Drawer row height: approximate value `56px` to `64px`.
+- Drawer row height: approximate value `34px` to `36px` in Flutter after calibration.
   Confidence: Medium.
   Reason: Selected row has a large rounded pill height.
 - Bottom sheet padding: approximate value `16px` horizontal, `28px` top.
   Confidence: Medium.
   Reason: Text begins close to sheet edge but still with mobile-safe inset.
-- Quick-add toolbar vertical gap from description: approximate value `44px`.
+- Quick-add toolbar vertical gap from description: approximate value `24px` in Flutter after calibration.
   Confidence: Low.
   Reason: Keyboard covers part of the flow and sheet content may be compressed.
 
@@ -403,15 +404,15 @@ Approximate sizes:
 
 | Icon Context | Size | Color | Notes |
 |---|---:|---|---|
-| Top app hamburger | `32px` | `--color-icon` | Three horizontal lines |
-| Top app action icons | `32px` | `--color-icon` | Lightbulb/sparkle and overflow |
-| Drawer header icons | `32px` | `--color-icon` | Search, bell, hex/settings |
-| Drawer nav icons | `28px` | Blue or white | Left-aligned in fixed icon column |
-| Task row repeat icon | `22px` | `--color-text-subtle` | Right metadata column below/near date |
-| Bottom nav icons | `30px` | Blue active or gray inactive | No labels visible |
-| Quick-add toolbar icons | `28px` to `32px` | Blue active date, gray others | Stroke icons |
-| Task detail bottom icons | `28px` to `32px` | `--color-icon-muted` | Tag, checklist, attachment |
-| FAB plus | `34px` | White | Centered in blue circular button |
+| Top app hamburger | `27px` | `--color-icon` | Three horizontal lines inside a `44px` target |
+| Top app action icons | `27px` | `--color-icon` | Lightbulb/sparkle and overflow inside `44px` targets |
+| Drawer header icons | `24px` | `--color-icon` | Search, bell, hex/settings |
+| Drawer nav icons | `20px` | Blue or white | Left-aligned in fixed icon column |
+| Task row repeat icon | `15px` | `--color-text-subtle` | Right metadata column below/near date |
+| Bottom nav icons | `30px` active, `26px` inactive | Blue active or gray inactive | No labels visible |
+| Quick-add toolbar icons | `24px` | Blue active date, gray others | Stroke icons inside `44px` targets |
+| Task detail bottom icons | `24px` | `--color-icon-muted` | Tag, checklist, attachment |
+| FAB plus | `30px` | White | Centered in blue circular button |
 
 Preferred library:
 

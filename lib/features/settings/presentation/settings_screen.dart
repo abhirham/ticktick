@@ -80,24 +80,34 @@ class _SettingsPanel extends StatelessWidget {
             title,
             style: TextStyle(
               color: colors.text,
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 12),
           for (final row in rows)
-            SizedBox(
-              height: 56,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      row,
-                      style: TextStyle(color: colors.text, fontSize: 21),
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 52),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        row,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: colors.text,
+                          fontSize: 17,
+                          height: 1.25,
+                        ),
+                      ),
                     ),
-                  ),
-                  Icon(Icons.chevron_right_rounded, color: colors.textMuted),
-                ],
+                    const SizedBox(width: 8),
+                    Icon(Icons.chevron_right_rounded, color: colors.textMuted),
+                  ],
+                ),
               ),
             ),
         ],

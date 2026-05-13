@@ -4,22 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/providers.dart';
 import '../../../../app/theme.dart';
 import '../../../../core/time/flow_date_utils.dart';
+import '../../../../shared/presentation/flow_bottom_sheet.dart';
 import '../../domain/task_draft.dart';
 
-Future<void> showQuickAddSheet(BuildContext context) {
-  return showModalBottomSheet<void>(
+Future<void> showQuickAddSheet(
+  BuildContext context, {
+  DateTime? initialDueDate,
+  String? dateLabel,
+}) {
+  return showFlowBottomSheet<void>(
     context: context,
-    isScrollControlled: true,
-    useSafeArea: false,
-    useRootNavigator: true,
-    barrierColor: Colors.black.withValues(alpha: 0.82),
-    backgroundColor: Colors.transparent,
-    builder: (context) => const QuickAddSheet(),
+    builder: (context) =>
+        QuickAddSheet(initialDueDate: initialDueDate, dateLabel: dateLabel),
   );
 }
 
 class QuickAddSheet extends ConsumerStatefulWidget {
-  const QuickAddSheet({super.key});
+  const QuickAddSheet({this.initialDueDate, this.dateLabel, super.key});
+
+  final DateTime? initialDueDate;
+  final String? dateLabel;
 
   @override
   ConsumerState<QuickAddSheet> createState() => _QuickAddSheetState();
@@ -39,96 +43,79 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x66000000),
-              blurRadius: 24,
-              offset: Offset(0, -8),
+    final dueDate = dateOnly(widget.initialDueDate ?? DateTime.now());
+    final label = widget.dateLabel ?? compactDateLabel(dueDate, DateTime.now());
+    return FlowBottomSheetSurface(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _titleController,
+            autofocus: true,
+            cursorColor: colors.primary,
+            maxLines: 1,
+            style: TextStyle(
+              color: colors.textStrong,
+              fontSize: 20.5,
+              fontWeight: FontWeight.w400,
+              height: 1.25,
             ),
-          ],
-        ),
-        padding: const EdgeInsets.fromLTRB(16, 28, 16, 22),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            decoration: const InputDecoration(
+              hintText: 'What would you like to do?',
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              isCollapsed: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _save(),
+          ),
+          const SizedBox(height: 14),
+          TextField(
+            controller: _descriptionController,
+            cursorColor: colors.primary,
+            maxLines: 1,
+            style: TextStyle(
+              color: colors.text,
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              height: 1.25,
+            ),
+            decoration: const InputDecoration(
+              hintText: 'Description',
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              isCollapsed: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _save(),
+          ),
+          const SizedBox(height: 24),
+          Row(
             children: [
-              TextField(
-                controller: _titleController,
-                autofocus: true,
-                cursorColor: colors.primary,
-                maxLines: 1,
-                style: TextStyle(
-                  color: colors.textStrong,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w400,
-                  height: 1.25,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 108),
+                child: _ToolbarAction(
+                  icon: Icons.calendar_month_outlined,
+                  label: label,
+                  active: true,
+                  onTap: () {},
                 ),
-                decoration: const InputDecoration(
-                  hintText: 'What would you like to do?',
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  isCollapsed: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _save(),
               ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _descriptionController,
-                cursorColor: colors.primary,
-                maxLines: 1,
-                style: TextStyle(
-                  color: colors.text,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w400,
-                  height: 1.25,
-                ),
-                decoration: const InputDecoration(
-                  hintText: 'Description',
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  isCollapsed: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                textInputAction: TextInputAction.done,
-                onSubmitted: (_) => _save(),
-              ),
-              const SizedBox(height: 28),
-              Row(
-                children: [
-                  _ToolbarAction(
-                    icon: Icons.calendar_month_outlined,
-                    label: 'Today',
-                    active: true,
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 24),
-                  _ToolbarIcon(icon: Icons.flag_outlined, onTap: () {}),
-                  const SizedBox(width: 24),
-                  _ToolbarIcon(icon: Icons.local_offer_outlined, onTap: () {}),
-                  const SizedBox(width: 24),
-                  _ToolbarIcon(icon: Icons.inbox_outlined, onTap: () {}),
-                  const SizedBox(width: 24),
-                  _ToolbarIcon(icon: Icons.more_horiz_rounded, onTap: () {}),
-                  const Spacer(),
-                  _ToolbarIcon(icon: Icons.mic_none_rounded, onTap: () {}),
-                ],
-              ),
+              const SizedBox(width: 4),
+              _ToolbarIcon(icon: Icons.flag_outlined, onTap: () {}),
+              _ToolbarIcon(icon: Icons.local_offer_outlined, onTap: () {}),
+              _ToolbarIcon(icon: Icons.inbox_outlined, onTap: () {}),
+              _ToolbarIcon(icon: Icons.more_horiz_rounded, onTap: () {}),
+              const Spacer(),
+              _ToolbarIcon(icon: Icons.mic_none_rounded, onTap: () {}),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -144,7 +131,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
           TaskDraft(
             title: title,
             description: _descriptionController.text,
-            dueDate: dateOnly(DateTime.now()),
+            dueDate: dateOnly(widget.initialDueDate ?? DateTime.now()),
           ),
         );
     if (mounted) {
@@ -173,19 +160,27 @@ class _ToolbarAction extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(999),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 30),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 17,
-              fontWeight: FontWeight.w500,
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -199,10 +194,13 @@ class _ToolbarIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
-      child: Icon(icon, color: context.colors.iconMuted, size: 30),
+    return SizedBox.square(
+      dimension: 44,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Icon(icon, color: context.colors.iconMuted, size: 24),
+      ),
     );
   }
 }

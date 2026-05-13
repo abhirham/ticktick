@@ -23,7 +23,7 @@ class FlowTaskPageHeader extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: SizedBox(
-        height: 56,
+        height: 50,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -37,7 +37,7 @@ class FlowTaskPageHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: colors.textStrong,
-                    fontSize: 32,
+                    fontSize: 27,
                     fontWeight: FontWeight.w700,
                     height: 1.2,
                   ),
@@ -70,14 +70,14 @@ class FlowIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.colors;
     return SizedBox(
-      width: 40,
-      height: 48,
+      width: 44,
+      height: 44,
       child: IconButton(
         tooltip: tooltip,
         onPressed: onPressed,
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 40, height: 48),
-        iconSize: 32,
+        constraints: const BoxConstraints.tightFor(width: 44, height: 44),
+        iconSize: 27,
         color: isActive ? colors.primary : colors.icon,
         disabledColor: colors.icon,
         icon: Icon(icon),
@@ -121,7 +121,7 @@ class TaskSectionCard extends StatelessWidget {
         color: colors.surface,
         borderRadius: BorderRadius.circular(20),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -132,14 +132,14 @@ class TaskSectionCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     color: muted ? colors.textSubtle : colors.text,
-                    fontSize: 19,
+                    fontSize: 17,
                     fontWeight: FontWeight.w700,
                     height: 1.3,
                   ),
                 ),
               ),
               if (action != null) action!,
-              if (action != null) const SizedBox(width: 16),
+              if (action != null) const SizedBox(width: 14),
               trailing ??
                   _HeaderCount(count: tasks.length, chevron: showChevron),
             ],
@@ -151,7 +151,7 @@ class TaskSectionCard extends StatelessWidget {
                 emptyText,
                 style: TextStyle(
                   color: colors.textMuted,
-                  fontSize: 20,
+                  fontSize: 17,
                   height: 1.3,
                 ),
               ),
@@ -165,20 +165,20 @@ class TaskSectionCard extends StatelessWidget {
                   if (showProjectMarkers && tasks.length > 2)
                     const Positioned(
                       left: -16,
-                      top: 112,
-                      child: _ProjectMarker(height: 48),
+                      top: 96,
+                      child: _ProjectMarker(height: 44),
                     ),
                   if (showProjectMarkers && tasks.length > 4)
                     const Positioned(
                       left: -16,
-                      top: 248,
-                      child: _ProjectMarker(height: 48),
+                      top: 220,
+                      child: _ProjectMarker(height: 44),
                     ),
                   if (showProjectMarkers && tasks.length > 6)
                     const Positioned(
                       left: -16,
                       bottom: 10,
-                      child: _ProjectMarker(height: 48),
+                      child: _ProjectMarker(height: 44),
                     ),
                   Column(
                     children: [
@@ -219,7 +219,7 @@ class SectionTextAction extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+        style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -253,7 +253,7 @@ class TaskRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 44),
+          constraints: const BoxConstraints(minHeight: 40),
           child: Row(
             children: [
               TaskCheckBox(
@@ -261,7 +261,7 @@ class TaskRow extends StatelessWidget {
                 onTap: onToggle,
                 muted: muted || isCompleted,
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   task.title,
@@ -271,16 +271,16 @@ class TaskRow extends StatelessWidget {
                     color: muted || isCompleted
                         ? colors.textSubtle
                         : colors.text,
-                    fontSize: 19,
+                    fontSize: 17,
                     fontWeight: FontWeight.w400,
                     height: 1.28,
                   ),
                 ),
               ),
               if (metadata != null) ...[
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 SizedBox(
-                  width: 88,
+                  width: 82,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -294,30 +294,30 @@ class TaskRow extends StatelessWidget {
                           color: muted
                               ? colors.textSubtle
                               : metadata.color(colors),
-                          fontSize: 14,
+                          fontSize: 12.5,
                           fontWeight: FontWeight.w500,
                           height: 1.2,
                         ),
                       ),
                       if (task.recurrenceRuleId != null) ...[
-                        const SizedBox(height: 5),
+                        const SizedBox(height: 4),
                         Icon(
                           Icons.repeat_rounded,
                           color: colors.textSubtle,
-                          size: 16,
+                          size: 15,
                         ),
                       ],
                     ],
                   ),
                 ),
               ] else if (task.recurrenceRuleId != null) ...[
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 SizedBox(
-                  width: 36,
+                  width: 32,
                   child: Icon(
                     Icons.repeat_rounded,
                     color: colors.textSubtle,
-                    size: 16,
+                    size: 15,
                   ),
                 ),
               ],
@@ -365,18 +365,18 @@ class TaskCheckBox extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 18,
-        height: 18,
+        width: 16,
+        height: 16,
         decoration: BoxDecoration(
           color: checked ? colors.textSubtle : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: checked || muted ? colors.textSubtle : colors.border,
-            width: 1.5,
+            width: 1.4,
           ),
         ),
         child: checked
-            ? Icon(Icons.check_rounded, size: 15, color: colors.surface)
+            ? Icon(Icons.check_rounded, size: 13, color: colors.surface)
             : null,
       ),
     );
@@ -395,13 +395,16 @@ class _HeaderCount extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('$count', style: TextStyle(color: colors.textMuted, fontSize: 16)),
+        Text(
+          '$count',
+          style: TextStyle(color: colors.textMuted, fontSize: 14.5),
+        ),
         if (chevron) ...[
           const SizedBox(width: 6),
           Icon(
             Icons.keyboard_arrow_down_rounded,
             color: colors.textMuted,
-            size: 24,
+            size: 22,
           ),
         ],
       ],
