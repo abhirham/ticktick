@@ -3,6 +3,9 @@
 ## Collaboration
 
 - Spin up multiple agents when necessary to parallelize investigation, implementation, or verification work.
+- Refer to [todo.md](todo.md) to track task progress before starting work and while coordinating with other agents.
+- When working on a task, mark it as in progress in `todo.md` so other agents know it is already under work.
+- Mark tasks as completed in `todo.md` as soon as they are done.
 - Commit all checkpoints as work progresses, using clear commit messages for each checkpoint.
 - Push committed code to the configured remote when deemed necessary to share progress, preserve important checkpoints, or keep collaborators in sync.
 
