@@ -18,6 +18,8 @@ enum ListTaskGroupingMode {
 
 enum ListTaskSortMode { manual, dueDate, priority, createdDate, title }
 
+enum DeleteGroupTaskDisposition { moveToUngrouped, deleteTasks, moveToGroup }
+
 class TaskListSummary {
   const TaskListSummary({required this.list, required this.openTaskCount});
 
@@ -265,15 +267,46 @@ class ListGroupRepository {
     );
   }
 
-  Future<void> deleteGroup(String id) async {
+  Future<void> deleteGroup(
+    String id, {
+    DeleteGroupTaskDisposition taskDisposition =
+        DeleteGroupTaskDisposition.moveToUngrouped,
+    String? targetGroupId,
+  }) async {
     final group = await _requireGroup(id);
+    ListGroup? targetGroup;
+    if (taskDisposition == DeleteGroupTaskDisposition.moveToGroup) {
+      if (targetGroupId == null || targetGroupId == group.id) {
+        throw StateError('Choose another group before deleting this group.');
+      }
+      targetGroup = await _requireGroup(targetGroupId);
+      if (targetGroup.listId != group.listId) {
+        throw StateError('Target group must belong to the same list.');
+      }
+    }
+
     await _db.transaction(() async {
       final now = _now();
+      final taskUpdate = switch (taskDisposition) {
+        DeleteGroupTaskDisposition.moveToUngrouped => TaskItemsCompanion(
+          groupId: const Value(null),
+          updatedAt: Value(now),
+        ),
+        DeleteGroupTaskDisposition.moveToGroup => TaskItemsCompanion(
+          groupId: Value(targetGroup!.id),
+          updatedAt: Value(now),
+        ),
+        DeleteGroupTaskDisposition.deleteTasks => TaskItemsCompanion(
+          status: Value(TaskStatus.deleted.value),
+          deletedAt: Value(now),
+          completedAt: const Value(null),
+          persistentCompletedAt: const Value(null),
+          updatedAt: Value(now),
+        ),
+      };
       await (_db.update(
         _db.taskItems,
-      )..where((task) => task.groupId.equals(group.id))).write(
-        TaskItemsCompanion(groupId: const Value(null), updatedAt: Value(now)),
-      );
+      )..where((task) => task.groupId.equals(group.id))).write(taskUpdate);
       await (_db.delete(
         _db.listGroups,
       )..where((item) => item.id.equals(group.id))).go();
@@ -341,10 +374,7 @@ class ListGroupRepository {
       ListTaskGroupingMode.none => [
         ListTaskSection(id: 'all', title: 'All Tasks', tasks: sortedTasks),
       ],
-      ListTaskGroupingMode.dueDate => _bucketSections(
-        sortedTasks,
-        _dueDateBucket,
-      ),
+      ListTaskGroupingMode.dueDate => _dueDateSections(sortedTasks),
       ListTaskGroupingMode.priority => _fixedBucketSections(sortedTasks, [
         _TaskBucket('priority-high', 'High', (task) {
           return TaskPriority.fromValue(task.priority) == TaskPriority.high;
@@ -443,25 +473,39 @@ class ListGroupRepository {
     ];
   }
 
-  _TaskBucket _dueDateBucket(TaskItem task) {
-    if (task.dueDate == null) {
-      return _TaskBucket('no-date', 'No Date', (_) => true);
-    }
+  List<ListTaskSection> _dueDateSections(List<TaskItem> tasks) {
     final today = dateOnly(_now());
-    final dueDate = dateOnly(task.dueDate!);
-    if (dueDate.isBefore(today)) {
-      return _TaskBucket('overdue', 'Overdue', (_) => true);
-    }
-    if (dueDate == today) {
-      return _TaskBucket('today', 'Today', (_) => true);
-    }
-    return _TaskBucket('later', 'Later', (_) => true);
+    final buckets = [
+      _TaskBucket('overdue', 'Overdue', (task) {
+        final dueDate = task.dueDate;
+        return dueDate != null && dateOnly(dueDate).isBefore(today);
+      }),
+      _TaskBucket('today', 'Today', (task) {
+        final dueDate = task.dueDate;
+        return dueDate != null && dateOnly(dueDate) == today;
+      }),
+      _TaskBucket('later', 'Later', (task) {
+        final dueDate = task.dueDate;
+        return dueDate != null && dateOnly(dueDate).isAfter(today);
+      }),
+      _TaskBucket('no-date', 'No Date', (task) => task.dueDate == null),
+    ];
+
+    return [
+      for (final bucket in buckets)
+        if (tasks.any(bucket.matches))
+          ListTaskSection(
+            id: bucket.id,
+            title: bucket.title,
+            tasks: tasks.where(bucket.matches).toList(),
+          ),
+    ];
   }
 
   Comparator<TaskItem> _taskComparator(ListTaskSortMode sortMode) {
     return (left, right) {
-      return switch (sortMode) {
-        ListTaskSortMode.manual => _compareManual(left, right),
+      final primary = switch (sortMode) {
+        ListTaskSortMode.manual => 0,
         ListTaskSortMode.dueDate => _compareNullableDate(
           left.dueDate,
           right.dueDate,
@@ -476,6 +520,10 @@ class ListGroupRepository {
           right.title.toLowerCase(),
         ),
       };
+      if (primary != 0) {
+        return primary;
+      }
+      return _compareManual(left, right);
     };
   }
 

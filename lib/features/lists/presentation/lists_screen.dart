@@ -138,9 +138,10 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
                     summary: selectedSummary,
                     onAddGroup: () =>
                         _showGroupSheet(list: selectedSummary.list),
-                    onEditGroup: (section) => _showGroupSheet(
+                    onEditGroup: (section, sections) => _showGroupSheet(
                       list: selectedSummary.list,
                       section: section,
+                      sections: sections,
                     ),
                     onMoveGroup: _moveGroup,
                     onMoveTask: (task, sections) => _showMoveTaskSheet(
@@ -232,13 +233,15 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   Future<void> _showGroupSheet({
     required TaskList list,
     ListTaskSection? section,
+    List<ListTaskSection> sections = const [],
   }) async {
     if (section?.isUngrouped ?? false) {
       return;
     }
     await showFlowBottomSheet<void>(
       context: context,
-      builder: (context) => _GroupEditorSheet(list: list, section: section),
+      builder: (context) =>
+          _GroupEditorSheet(list: list, section: section, sections: sections),
     );
   }
 
@@ -255,7 +258,7 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
   }
 }
 
-class _SelectedListGroupsPanel extends ConsumerWidget {
+class _SelectedListGroupsPanel extends ConsumerStatefulWidget {
   const _SelectedListGroupsPanel({
     required this.summary,
     required this.onAddGroup,
@@ -266,7 +269,8 @@ class _SelectedListGroupsPanel extends ConsumerWidget {
 
   final TaskListSummary summary;
   final VoidCallback onAddGroup;
-  final ValueChanged<ListTaskSection> onEditGroup;
+  final void Function(ListTaskSection section, List<ListTaskSection> sections)
+  onEditGroup;
   final Future<void> Function(
     TaskList list,
     List<ListTaskSection> sections,
@@ -277,25 +281,55 @@ class _SelectedListGroupsPanel extends ConsumerWidget {
   final void Function(TaskItem task, List<ListTaskSection> sections) onMoveTask;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_SelectedListGroupsPanel> createState() =>
+      _SelectedListGroupsPanelState();
+}
+
+class _SelectedListGroupsPanelState
+    extends ConsumerState<_SelectedListGroupsPanel> {
+  ListTaskGroupingMode _groupingMode = ListTaskGroupingMode.manualGroups;
+  ListTaskSortMode _sortMode = ListTaskSortMode.manual;
+
+  @override
+  Widget build(BuildContext context) {
     final sectionsAsync = ref.watch(
       listTaskSectionsProvider(
-        ListTaskSectionsRequest(listId: summary.list.id),
+        ListTaskSectionsRequest(
+          listId: widget.summary.list.id,
+          groupingMode: _groupingMode,
+          sortMode: _sortMode,
+        ),
       ),
     );
-    final color = _colorFromHex(summary.list.color, context.colors.primary);
+    final color = _colorFromHex(
+      widget.summary.list.color,
+      context.colors.primary,
+    );
     return _ListPanel(
-      title: summary.list.name,
-      subtitle: '${summary.openTaskCount} open',
+      title: widget.summary.list.name,
+      subtitle:
+          '${widget.summary.openTaskCount} open - ${_groupingModeLabel(_groupingMode)} - ${_sortModeLabel(_sortMode)}',
       leading: Icon(
-        _iconDataForList(summary.list.icon),
+        _iconDataForList(widget.summary.list.icon),
         color: color,
         size: 20,
       ),
-      trailing: _PanelIconAction(
-        icon: Icons.create_new_folder_outlined,
-        tooltip: 'Add group',
-        onPressed: onAddGroup,
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _TinyIconButton(
+            icon: Icons.tune_rounded,
+            tooltip: 'Group and sort',
+            onPressed: _showGroupSortSheet,
+          ),
+          _TinyIconButton(
+            icon: Icons.create_new_folder_outlined,
+            tooltip: 'Add group',
+            onPressed: _groupingMode == ListTaskGroupingMode.manualGroups
+                ? widget.onAddGroup
+                : null,
+          ),
+        ],
       ),
       children: [
         sectionsAsync.when(
@@ -317,24 +351,24 @@ class _SelectedListGroupsPanel extends ConsumerWidget {
                       (item) => item.groupId == section.groupId,
                     ),
                     groupCount: groupSections.length,
-                    onEdit: () => onEditGroup(section),
+                    onEdit: () => widget.onEditGroup(section, sections),
                     onMoveUp: section.groupId == null
                         ? null
-                        : () => onMoveGroup(
-                            summary.list,
+                        : () => widget.onMoveGroup(
+                            widget.summary.list,
                             sections,
                             section.groupId!,
                             -1,
                           ),
                     onMoveDown: section.groupId == null
                         ? null
-                        : () => onMoveGroup(
-                            summary.list,
+                        : () => widget.onMoveGroup(
+                            widget.summary.list,
                             sections,
                             section.groupId!,
                             1,
                           ),
-                    onMoveTask: onMoveTask,
+                    onMoveTask: widget.onMoveTask,
                   ),
               ],
             );
@@ -344,6 +378,21 @@ class _SelectedListGroupsPanel extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _showGroupSortSheet() async {
+    final selection = await showFlowBottomSheet<_GroupSortSelection>(
+      context: context,
+      builder: (context) =>
+          _GroupSortSheet(groupingMode: _groupingMode, sortMode: _sortMode),
+    );
+    if (selection == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _groupingMode = selection.groupingMode;
+      _sortMode = selection.sortMode;
+    });
   }
 }
 
@@ -373,6 +422,7 @@ class _GroupSectionView extends ConsumerWidget {
     final colors = context.colors;
     final canMoveUp = groupIndex > 0;
     final canMoveDown = groupIndex >= 0 && groupIndex < groupCount - 1;
+    final canManageGroup = section.groupId != null;
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Column(
@@ -419,7 +469,7 @@ class _GroupSectionView extends ConsumerWidget {
                   style: TextStyle(color: colors.textMuted, fontSize: 14.5),
                 ),
                 const SizedBox(width: 4),
-                if (!section.isUngrouped) ...[
+                if (canManageGroup) ...[
                   _TinyIconButton(
                     icon: Icons.keyboard_arrow_up_rounded,
                     tooltip: 'Move group up',
@@ -741,6 +791,148 @@ class _BaseRow extends StatelessWidget {
   }
 }
 
+class _GroupSortSelection {
+  const _GroupSortSelection({
+    required this.groupingMode,
+    required this.sortMode,
+  });
+
+  final ListTaskGroupingMode groupingMode;
+  final ListTaskSortMode sortMode;
+}
+
+class _GroupSortSheet extends StatefulWidget {
+  const _GroupSortSheet({required this.groupingMode, required this.sortMode});
+
+  final ListTaskGroupingMode groupingMode;
+  final ListTaskSortMode sortMode;
+
+  @override
+  State<_GroupSortSheet> createState() => _GroupSortSheetState();
+}
+
+class _GroupSortSheetState extends State<_GroupSortSheet> {
+  late ListTaskGroupingMode _groupingMode;
+  late ListTaskSortMode _sortMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _groupingMode = widget.groupingMode;
+    _sortMode = widget.sortMode;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return FlowBottomSheetSurface(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SheetTitle(
+            title: 'Group & Sort',
+            subtitle: 'Choose this list view.',
+          ),
+          const SizedBox(height: 18),
+          Text(
+            'Group by',
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final mode in ListTaskGroupingMode.values)
+            _ModeChoiceRow(
+              icon: _groupingModeIcon(mode),
+              label: _groupingModeLabel(mode),
+              selected: mode == _groupingMode,
+              onTap: () => setState(() => _groupingMode = mode),
+            ),
+          const SizedBox(height: 16),
+          Text(
+            'Sort by',
+            style: TextStyle(
+              color: colors.textMuted,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (final mode in ListTaskSortMode.values)
+            _ModeChoiceRow(
+              icon: _sortModeIcon(mode),
+              label: _sortModeLabel(mode),
+              selected: mode == _sortMode,
+              onTap: () => setState(() => _sortMode = mode),
+            ),
+          const SizedBox(height: 22),
+          FlowActionButton(
+            primary: true,
+            icon: Icons.check_rounded,
+            label: 'Apply',
+            onPressed: () => Navigator.of(context).pop(
+              _GroupSortSelection(
+                groupingMode: _groupingMode,
+                sortMode: _sortMode,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ModeChoiceRow extends StatelessWidget {
+  const _ModeChoiceRow({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final foreground = selected ? colors.primary : colors.text;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            Icon(icon, color: foreground, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_rounded, color: colors.primary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _ListEditorSheet extends ConsumerStatefulWidget {
   const _ListEditorSheet({this.list});
 
@@ -915,9 +1107,14 @@ class _ListEditorSheetState extends ConsumerState<_ListEditorSheet> {
 }
 
 class _GroupEditorSheet extends ConsumerStatefulWidget {
-  const _GroupEditorSheet({required this.list, this.section});
+  const _GroupEditorSheet({
+    required this.list,
+    required this.sections,
+    this.section,
+  });
 
   final TaskList list;
+  final List<ListTaskSection> sections;
   final ListTaskSection? section;
 
   @override
@@ -1004,19 +1201,22 @@ class _GroupEditorSheetState extends ConsumerState<_GroupEditorSheet> {
     if (section == null) {
       return;
     }
-    final confirmed = await showFlowBottomSheet<bool>(
+    final choice = await showFlowBottomSheet<_DeleteGroupChoice>(
       context: context,
-      builder: (context) => _ConfirmSheet(
-        title: 'Delete Group',
-        message: 'Tasks in ${section.title} will move to Ungrouped.',
-        actionLabel: 'Delete Group',
-      ),
+      builder: (context) =>
+          _DeleteGroupChoiceSheet(section: section, sections: widget.sections),
     );
-    if (confirmed != true) {
+    if (choice == null) {
       return;
     }
     try {
-      await ref.read(listGroupRepositoryProvider).deleteGroup(section.groupId!);
+      await ref
+          .read(listGroupRepositoryProvider)
+          .deleteGroup(
+            section.groupId!,
+            taskDisposition: choice.disposition,
+            targetGroupId: choice.targetGroupId,
+          );
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -1025,6 +1225,154 @@ class _GroupEditorSheetState extends ConsumerState<_GroupEditorSheet> {
         _showSheetSnack(context, '$error');
       }
     }
+  }
+}
+
+class _DeleteGroupChoice {
+  const _DeleteGroupChoice({required this.disposition, this.targetGroupId});
+
+  final DeleteGroupTaskDisposition disposition;
+  final String? targetGroupId;
+}
+
+class _DeleteGroupChoiceSheet extends StatefulWidget {
+  const _DeleteGroupChoiceSheet({
+    required this.section,
+    required this.sections,
+  });
+
+  final ListTaskSection section;
+  final List<ListTaskSection> sections;
+
+  @override
+  State<_DeleteGroupChoiceSheet> createState() =>
+      _DeleteGroupChoiceSheetState();
+}
+
+class _DeleteGroupChoiceSheetState extends State<_DeleteGroupChoiceSheet> {
+  DeleteGroupTaskDisposition _disposition =
+      DeleteGroupTaskDisposition.moveToUngrouped;
+  String? _targetGroupId;
+
+  @override
+  Widget build(BuildContext context) {
+    final otherGroups = [
+      for (final section in widget.sections)
+        if (section.groupId != null &&
+            section.groupId != widget.section.groupId)
+          section,
+    ];
+    return FlowBottomSheetSurface(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _SheetTitle(
+            title: 'Delete Group',
+            subtitle:
+                'Choose what happens to tasks in ${widget.section.title}.',
+          ),
+          const SizedBox(height: 16),
+          _DeleteGroupChoiceRow(
+            icon: Icons.inbox_outlined,
+            label: 'Move tasks to Ungrouped',
+            selected:
+                _disposition == DeleteGroupTaskDisposition.moveToUngrouped,
+            onTap: () => setState(() {
+              _disposition = DeleteGroupTaskDisposition.moveToUngrouped;
+              _targetGroupId = null;
+            }),
+          ),
+          for (final group in otherGroups)
+            _DeleteGroupChoiceRow(
+              icon: Icons.folder_outlined,
+              label: 'Move tasks to ${group.title}',
+              selected:
+                  _disposition == DeleteGroupTaskDisposition.moveToGroup &&
+                  _targetGroupId == group.groupId,
+              onTap: () => setState(() {
+                _disposition = DeleteGroupTaskDisposition.moveToGroup;
+                _targetGroupId = group.groupId;
+              }),
+            ),
+          _DeleteGroupChoiceRow(
+            icon: Icons.delete_outline,
+            label: 'Move tasks to Trash',
+            destructive: true,
+            selected: _disposition == DeleteGroupTaskDisposition.deleteTasks,
+            onTap: () => setState(() {
+              _disposition = DeleteGroupTaskDisposition.deleteTasks;
+              _targetGroupId = null;
+            }),
+          ),
+          const SizedBox(height: 22),
+          FlowActionButton(
+            icon: Icons.delete_outline,
+            label: 'Delete Group',
+            destructive: true,
+            onPressed: () => Navigator.of(context).pop(
+              _DeleteGroupChoice(
+                disposition: _disposition,
+                targetGroupId: _targetGroupId,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeleteGroupChoiceRow extends StatelessWidget {
+  const _DeleteGroupChoiceRow({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.destructive = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final bool destructive;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final foreground = destructive
+        ? colors.danger
+        : selected
+        ? colors.primary
+        : colors.text;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        height: 44,
+        child: Row(
+          children: [
+            Icon(icon, color: foreground, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_rounded, color: colors.primary, size: 20),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -1418,6 +1766,48 @@ IconData _iconDataForList(String? key) {
     'bank' => Icons.account_balance_outlined,
     'spark' => Icons.auto_awesome_outlined,
     _ => Icons.list_alt_rounded,
+  };
+}
+
+String _groupingModeLabel(ListTaskGroupingMode mode) {
+  return switch (mode) {
+    ListTaskGroupingMode.manualGroups => 'Manual groups',
+    ListTaskGroupingMode.none => 'No groups',
+    ListTaskGroupingMode.dueDate => 'Due date',
+    ListTaskGroupingMode.priority => 'Priority',
+    ListTaskGroupingMode.status => 'Status',
+    ListTaskGroupingMode.persistent => 'Persistent',
+  };
+}
+
+IconData _groupingModeIcon(ListTaskGroupingMode mode) {
+  return switch (mode) {
+    ListTaskGroupingMode.manualGroups => Icons.folder_outlined,
+    ListTaskGroupingMode.none => Icons.view_agenda_outlined,
+    ListTaskGroupingMode.dueDate => Icons.calendar_today_outlined,
+    ListTaskGroupingMode.priority => Icons.flag_outlined,
+    ListTaskGroupingMode.status => Icons.checklist_rounded,
+    ListTaskGroupingMode.persistent => Icons.push_pin_outlined,
+  };
+}
+
+String _sortModeLabel(ListTaskSortMode mode) {
+  return switch (mode) {
+    ListTaskSortMode.manual => 'Manual sort',
+    ListTaskSortMode.dueDate => 'Due date',
+    ListTaskSortMode.priority => 'Priority',
+    ListTaskSortMode.createdDate => 'Created date',
+    ListTaskSortMode.title => 'Title',
+  };
+}
+
+IconData _sortModeIcon(ListTaskSortMode mode) {
+  return switch (mode) {
+    ListTaskSortMode.manual => Icons.swap_vert_rounded,
+    ListTaskSortMode.dueDate => Icons.calendar_today_outlined,
+    ListTaskSortMode.priority => Icons.flag_outlined,
+    ListTaskSortMode.createdDate => Icons.schedule_outlined,
+    ListTaskSortMode.title => Icons.sort_by_alpha_rounded,
   };
 }
 

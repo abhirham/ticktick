@@ -23,18 +23,18 @@
 - [x] Implement list colors and optional list icons.
 - [x] Implement create, rename, delete, collapse, expand, and reorder groups.
 - [x] Implement moving tasks between groups.
-- [ ] Add the delete-group choice flow: move tasks to Ungrouped, delete tasks, or move tasks to another group.
+- [x] Add the delete-group choice flow: move tasks to Ungrouped, delete tasks, or move tasks to another group.
 - [x] Keep Ungrouped visible for every list.
-- [ ] Add list grouping modes: manual, due date, priority, status, persistent vs normal, and none.
-- [ ] Add sorting modes inside groups: manual, due date, priority, created date, and title.
+- [x] Add list grouping modes: manual, due date, priority, status, persistent vs normal, and none.
+- [x] Add sorting modes inside groups: manual, due date, priority, created date, and title.
 
 ## Natural Language Entry
 
 - [x] Expand parser coverage for all examples in `docs/NATURAL_LANGUAGE_SPEC.md`.
-- [ ] Add editable parsed chips for date, time, repeat, reminder, priority, list, group, and persistent.
-- [ ] Support removing parsed chips before saving.
-- [ ] Add list/group confirmation or warning behavior when parsed list/group does not exist.
-- [ ] Finish Natural Language Debug Screen output for raw input, cleaned title, parsed metadata, and warnings.
+- [ ] [in progress: codex/nl-worker] Add editable parsed chips for date, time, repeat, reminder, priority, list, group, and persistent.
+- [ ] [in progress: codex/nl-worker] Support removing parsed chips before saving.
+- [ ] [in progress: codex/nl-worker] Add list/group confirmation or warning behavior when parsed list/group does not exist.
+- [ ] [in progress: codex/nl-worker] Finish Natural Language Debug Screen output for raw input, cleaned title, parsed metadata, and warnings.
 - [x] Add parser tests for ambiguous dates, missing years, time without date, list/group syntax, reminders, recurrence, and persistent phrases.
 
 ## Persistent Tasks
@@ -49,12 +49,12 @@
 ## Repeating Tasks
 
 - [ ] Finish recurrence editor UI.
-- [ ] Implement next occurrence generation when a repeating task is completed.
-- [ ] Prevent duplicate future occurrences.
+- [ ] [in progress: codex/repeat-worker] Implement next occurrence generation when a repeating task is completed.
+- [ ] [in progress: codex/repeat-worker] Prevent duplicate future occurrences.
 - [ ] Support daily, weekly, monthly, yearly, custom intervals, weekdays, weekends, selected weekdays, last Friday, and every other Saturday.
 - [ ] Implement overdue repeating behavior setting.
-- [ ] Verify persistent plus repeating tasks do not duplicate.
-- [ ] Add recurrence engine tests for all supported patterns.
+- [ ] [in progress: codex/repeat-worker] Verify persistent plus repeating tasks do not duplicate.
+- [ ] [in progress: codex/repeat-worker] Add recurrence engine tests for all supported patterns.
 
 ## Reminders And Notifications
 

@@ -5,6 +5,7 @@ import 'package:flowtask/data/local/app_database.dart';
 import 'package:flowtask/features/lists/data/list_group_repository.dart';
 import 'package:flowtask/features/tasks/data/task_repository.dart';
 import 'package:flowtask/features/tasks/domain/task_draft.dart';
+import 'package:flowtask/features/tasks/domain/task_enums.dart';
 
 void main() {
   late AppDatabase database;
@@ -137,5 +138,133 @@ void main() {
 
     final groups = await listRepository.watchGroups(list.id).first;
     expect(groups, isEmpty);
+  });
+
+  test('deleting a group can move tasks to another group', () async {
+    final list = await listRepository.createList(name: 'Projects');
+    final source = await listRepository.createGroup(
+      listId: list.id,
+      name: 'Source',
+    );
+    final target = await listRepository.createGroup(
+      listId: list.id,
+      name: 'Target',
+    );
+    final task = await taskRepository.createTask(
+      TaskDraft(title: 'Move me', listId: list.id, groupId: source.id),
+    );
+
+    await listRepository.deleteGroup(
+      source.id,
+      taskDisposition: DeleteGroupTaskDisposition.moveToGroup,
+      targetGroupId: target.id,
+    );
+
+    final sections = await listRepository
+        .watchListTaskSections(listId: list.id)
+        .first;
+
+    expect(sections.map((section) => section.groupId), [null, target.id]);
+    expect(sections.last.tasks.single.id, task.id);
+  });
+
+  test('deleting a group can move its tasks to trash', () async {
+    final list = await listRepository.createList(name: 'Projects');
+    final source = await listRepository.createGroup(
+      listId: list.id,
+      name: 'Source',
+    );
+    final task = await taskRepository.createTask(
+      TaskDraft(title: 'Delete me', listId: list.id, groupId: source.id),
+    );
+
+    await listRepository.deleteGroup(
+      source.id,
+      taskDisposition: DeleteGroupTaskDisposition.deleteTasks,
+    );
+
+    final trash = await taskRepository.watchTrashTasks().first;
+    final groups = await listRepository.watchGroups(list.id).first;
+
+    expect(trash.single.id, task.id);
+    expect(groups, isEmpty);
+  });
+
+  test('groups list tasks by modes and sorts inside sections', () async {
+    final list = await listRepository.createList(name: 'Projects');
+    final oldest = await taskRepository.createTask(
+      TaskDraft(
+        title: 'Zeta',
+        listId: list.id,
+        dueDate: DateTime(2026, 5, 14),
+        priority: TaskPriority.low,
+        sortOrder: 2,
+      ),
+    );
+    final high = await taskRepository.createTask(
+      TaskDraft(
+        title: 'Alpha',
+        listId: list.id,
+        dueDate: DateTime(2026, 5, 12),
+        priority: TaskPriority.high,
+        isPersistent: true,
+        showInTodayUntilComplete: true,
+        sortOrder: 1,
+      ),
+    );
+    final noDate = await taskRepository.createTask(
+      TaskDraft(title: 'Middle', listId: list.id, sortOrder: 0),
+    );
+
+    final dueDateSections = await listRepository
+        .watchListTaskSections(
+          listId: list.id,
+          groupingMode: ListTaskGroupingMode.dueDate,
+          sortMode: ListTaskSortMode.title,
+        )
+        .first;
+
+    expect(dueDateSections.map((section) => section.title), [
+      'Today',
+      'Later',
+      'No Date',
+    ]);
+    expect(
+      dueDateSections.expand((section) => section.tasks).map((task) => task.id),
+      [high.id, oldest.id, noDate.id],
+    );
+
+    final prioritySections = await listRepository
+        .watchListTaskSections(
+          listId: list.id,
+          groupingMode: ListTaskGroupingMode.priority,
+          sortMode: ListTaskSortMode.manual,
+        )
+        .first;
+
+    expect(prioritySections.map((section) => section.title), [
+      'High',
+      'Medium',
+      'Low',
+      'No Priority',
+    ]);
+    expect(prioritySections.first.tasks.single.id, high.id);
+    expect(prioritySections[2].tasks.single.id, oldest.id);
+    expect(prioritySections.last.tasks.single.id, noDate.id);
+
+    final persistentSections = await listRepository
+        .watchListTaskSections(
+          listId: list.id,
+          groupingMode: ListTaskGroupingMode.persistent,
+          sortMode: ListTaskSortMode.createdDate,
+        )
+        .first;
+
+    expect(persistentSections.first.title, 'Persistent');
+    expect(persistentSections.first.tasks.single.id, high.id);
+    expect(persistentSections.last.tasks.map((task) => task.id), [
+      noDate.id,
+      oldest.id,
+    ]);
   });
 }
