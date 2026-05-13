@@ -98,9 +98,47 @@ class TaskRepository {
             : task.status.equals(TaskStatus.open.value);
         return statusExpression &
             task.deletedAt.isNull() &
-            task.dueDate.equals(day);
+            _calendarDateExpression(task, day);
       })
       ..orderBy([
+        (task) => OrderingTerm.asc(task.recurrenceOccurrenceDate),
+        (task) => OrderingTerm.asc(task.dueDate),
+        (task) => OrderingTerm.asc(task.dueTime),
+        (task) => OrderingTerm.asc(task.sortOrder),
+        (task) => OrderingTerm.asc(task.createdAt),
+      ]);
+    return query.watch();
+  }
+
+  Stream<List<TaskItem>> watchCalendarTasksForRange({
+    required DateTime start,
+    required DateTime end,
+    bool includeCompleted = false,
+  }) {
+    final rangeStart = dateOnly(start);
+    final rangeEnd = dateOnly(end);
+    final query = _db.select(_db.taskItems)
+      ..where((task) {
+        final statusExpression = includeCompleted
+            ? task.status.isIn([
+                TaskStatus.open.value,
+                TaskStatus.completed.value,
+              ])
+            : task.status.equals(TaskStatus.open.value);
+        final dueInRange =
+            task.recurrenceOccurrenceDate.isNull() &
+            task.dueDate.isBetweenValues(rangeStart, rangeEnd);
+        final occurrenceInRange = task.recurrenceOccurrenceDate.isBetweenValues(
+          rangeStart,
+          rangeEnd,
+        );
+        return statusExpression &
+            task.deletedAt.isNull() &
+            (dueInRange | occurrenceInRange);
+      })
+      ..orderBy([
+        (task) => OrderingTerm.asc(task.recurrenceOccurrenceDate),
+        (task) => OrderingTerm.asc(task.dueDate),
         (task) => OrderingTerm.asc(task.dueTime),
         (task) => OrderingTerm.asc(task.sortOrder),
         (task) => OrderingTerm.asc(task.createdAt),
@@ -213,6 +251,47 @@ class TaskRepository {
     );
   }
 
+  Future<void> moveTaskToDate({
+    required String id,
+    required DateTime date,
+  }) async {
+    final now = _now();
+    final targetDate = dateOnly(date);
+    final task = await (_db.select(
+      _db.taskItems,
+    )..where((task) => task.id.equals(id))).getSingleOrNull();
+    if (task == null) {
+      return;
+    }
+
+    await (_db.update(
+      _db.taskItems,
+    )..where((task) => task.id.equals(id))).write(
+      TaskItemsCompanion(
+        dueDate: Value(targetDate),
+        recurrenceOccurrenceDate: task.recurrenceOccurrenceDate == null
+            ? const Value.absent()
+            : Value(targetDate),
+        updatedAt: Value(now),
+      ),
+    );
+  }
+
+  Future<void> clearTaskDate(String id) async {
+    final now = _now();
+    await (_db.update(
+      _db.taskItems,
+    )..where((task) => task.id.equals(id))).write(
+      TaskItemsCompanion(
+        dueDate: const Value(null),
+        dueTime: const Value(null),
+        recurrenceOccurrenceDate: const Value(null),
+        isAllDay: const Value(true),
+        updatedAt: Value(now),
+      ),
+    );
+  }
+
   Future<void> completeTask(String id) async {
     final now = _now();
     await (_db.update(
@@ -313,6 +392,13 @@ class TaskRepository {
     return task.status.equals(TaskStatus.open.value) &
         task.deletedAt.isNull() &
         (dueToday | overdue | persistent);
+  }
+
+  Expression<bool> _calendarDateExpression(TaskItems task, DateTime day) {
+    final normalDueDate =
+        task.recurrenceOccurrenceDate.isNull() & task.dueDate.equals(day);
+    final recurrenceOccurrence = task.recurrenceOccurrenceDate.equals(day);
+    return normalDueDate | recurrenceOccurrence;
   }
 
   String? _nullableText(String? value) {
