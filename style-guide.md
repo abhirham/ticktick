@@ -7,7 +7,16 @@ Source mockups inspected:
 - `UI mockups/Screenshot_20260512_171334_TickTick.jpg`
 - `UI mockups/Screenshot_20260512_175944_TickTick.jpg`
 
-All four mockups are Android mobile screenshots at `1440x2954`. Values below are implementation-oriented logical pixel estimates, not raw screenshot pixels. Where a value is estimated, the guide marks it as approximate.
+Live TickTick audit inspected:
+
+- Android phone: Samsung `SM-S938W`.
+- App package: `com.ticktick.task`.
+- Theme: dark mode.
+- Physical capture size: `1440x3120`.
+- Android density: `560dpi`, approximately `3.5` physical pixels per `1dp`.
+- Logical viewport during audit: approximately `411dp x 891dp`.
+
+The four static mockups are Android mobile screenshots at `1440x2954`. Live audit captures were Android mobile screenshots at `1440x3120`. Values below are implementation-oriented logical pixel estimates, not raw screenshot pixels. For live-audit measurements, physical screenshot pixels were divided by approximately `3.5` to estimate Android `dp`. Where a value is estimated, the guide marks it as approximate.
 
 ## 1. Overview
 
@@ -27,7 +36,9 @@ Visible identity:
 
 Not visible:
 
-- Desktop layouts, tablet split panes, light mode, tables, web-style forms, toasts, alert banners, pagination, hover states, loading states, or error messages.
+- Desktop layouts, tablet split panes, light mode, tables, web-style forms, pagination, hover states, loading states, or error messages.
+- Toasts were not observed in either the static mockups or the live audit.
+- One in-app promotional banner and one anchored tooltip were observed in the live calendar screen. Use the live-audit banner and tooltip rules below for those specific components.
 
 ## 2. Design Principles
 
@@ -55,7 +66,9 @@ Measured recurring colors from the screenshots:
 | `--color-bg-near-black` | `#050505` | Dimmed background after overlay, near-black app regions |
 | `--color-surface` | `#1c1c1c` | Task cards, drawer background, quick-add sheet, task detail sheet |
 | `--color-surface-raised` | `#202020` | Slightly lifted/edge surface impression, FAB shadow edge, subtle sheet variation |
+| `--color-surface-popover` | `#222222` | Top-right overflow menus and nested menu surfaces |
 | `--color-surface-selected` | `#232d48` | Selected drawer row background |
+| `--color-surface-chip-selected` | `#1d2f55` | Selected search chips, kanban pills, and segmented sheet controls |
 | `--color-keyboard-bg` | `#1e1f25` | Android keyboard background visible in quick-add mockup. System UI, not app chrome |
 | `--color-keyboard-key` | `#35363c` | Android keyboard key fill visible in quick-add mockup. System UI, not app chrome |
 | `--color-text` | `#e6e6e6` | Primary titles, active task names, sheet title text |
@@ -66,12 +79,18 @@ Measured recurring colors from the screenshots:
 | `--color-icon-muted` | `#8d8d8d` | Secondary icons in rows and sheets |
 | `--color-border` | `#5e5e5e` | Unchecked checkbox outline |
 | `--color-border-muted` | `#3f3f3f` | Completed checkbox fill/border and subtle control edges |
+| `--color-divider` | `#343434` | Menu section dividers and bottom-sheet row dividers where visible |
 | `--color-primary` | `#4774fa` | Primary blue icons, active nav icon, FAB, selected date icon/text |
 | `--color-primary-bright` | `#4b78ff` | FAB and strongest blue accents |
 | `--color-primary-soft-bg` | `#232d48` | Dark blue selected navigation background |
+| `--color-primary-banner` | `#4f79ff` | Calendar subscription banner fill |
 | `--color-primary-sidebar-mark` | `#55a8ff` | Thin blue vertical task markers on card left edge |
 | `--color-danger` | `#da3e38` | Due date text in task list |
 | `--color-danger-strong` | `#e64a45` | Larger overdue date in detail sheet |
+| `--color-critical` | `#ff5b57` | Destructive action icon, observed in task-detail action sheet |
+| `--color-success` | `#13c8a0` | Share/action success icon, observed in task-detail action sheet |
+| `--color-warning` | `#f7b43b` | Pin/premium accent icon, observed in task-detail/settings surfaces |
+| `--color-upgrade` | `#ff8a45` | Premium upgrade outline/text accent |
 | `--color-overlay` | `rgba(0, 0, 0, 0.72)` | Modal/bottom-sheet dim overlay |
 | `--color-overlay-strong` | `rgba(0, 0, 0, 0.82)` | Heavier dim seen behind quick-add sheet and task-detail sheet |
 | `--color-avatar-badge` | `#d9d9d9` | Small crown badge circle on avatar |
@@ -81,10 +100,11 @@ Color usage rules:
 - Use `--color-bg` for the full mobile viewport.
 - Use `--color-surface` for cards, drawers, and bottom sheets. Do not create lighter gray cards unless a mockup shows them.
 - Use `--color-primary` only for selected/active affordances and primary creation actions.
-- Use `--color-danger` only for overdue or date-warning text. Do not use red for generic destructive buttons because no destructive button is visible.
+- Use `--color-danger` only for overdue or date-warning text. Use `--color-critical` for explicit destructive actions such as the task-detail `Delete` action icon.
 - Use `--color-text-muted` for counts and placeholders, and `--color-text-subtle` for completed/disabled content.
 - Selected drawer rows use a dark blue fill, not a border or underline.
-- Do not introduce gradients. The only glow-like effect is the soft blue shadow around the FAB.
+- Do not introduce gradients into default app chrome. The only default glow-like effect is the soft blue shadow around the FAB.
+- Gradients exist only as user-selectable background theme swatches inside the background picker. Do not use those swatches as normal panels, cards, buttons, or page backgrounds.
 
 Uncertain values:
 
@@ -125,6 +145,17 @@ Typography scale:
 | Bottom Toolbar Text | 20px | 500 | 28px | 0 | `Today` quick-add toolbar label |
 | Completed Row Text | 24px | 400 | 32px | 0 | Completed task names and dates |
 | Keyboard Text | 34px | 400 | 42px | 0 | Android keyboard letters. System UI, not app chrome |
+| Popover Menu Text | 24px | 400 | 32px | 0 | `View`, `Background`, `Group & Sort`, overflow rows |
+| Search Field Text | 24px | 400 | 32px | 0 | Search input placeholder and typed search text |
+| Search Chip Text | 18px | 500 | 24px | 0 | `Task`, `Lists`, `Filter` search pills |
+| Empty State Text | 21px | 400 | 30px | 0 | Search empty-state instruction text |
+| Calendar Date Number | 18px | 500 | 24px | 0 | Day numbers in calendar week strip |
+| Calendar Weekday Label | 15px | 500 | 20px | 0 | `Mon`, `Tue`, `Wed` labels |
+| Settings Page Title | 32px | 700 | 40px | 0 | `Settings`, `Tab Bar` page titles |
+| Settings Row Title | 22px | 400 | 30px | 0 | `Tab Bar`, `Appearance`, settings rows |
+| Settings Row Description | 17px | 400 | 24px | 0 | Multi-line settings descriptions |
+| Plan Day Hero Title | 44px | 700 | 54px | 0 | `Plan Your Day` onboarding title |
+| Plan Day Body | 24px | 400 | 34px | 0 | Plan-your-day explanatory paragraph |
 
 Text casing:
 
@@ -449,13 +480,21 @@ Visible example: bottom-left `Add`.
 
 ### Secondary Button
 
-Not clearly visible in the provided mockups.
-Recommended default: if needed, transparent or `--color-surface` background with muted text and no heavy border.
+Visible in the live calendar subscription banner.
+
+- Use compact rounded rectangles.
+- Secondary/dismissive action can use a semi-transparent dark/blue fill over a colored banner.
+- Text is white or light.
+- Do not use browser-default gray buttons.
 
 ### Destructive Button
 
-Not clearly visible in the provided mockups.
-Recommended default: if needed, use red text on transparent background before creating a filled red button, because the mockups use red as text-only date emphasis.
+Visible in the live task-detail overflow action sheet as a destructive action icon.
+
+- Use red/critical icon color and compact label.
+- Keep the tile background transparent or dark, not filled red.
+- Do not use a large filled red button unless a future TickTick screen shows one.
+- Red date text remains `--color-danger`; destructive actions use `--color-critical`.
 
 ### Loading Button
 
@@ -609,10 +648,10 @@ When to use cards vs plain sections:
 
 - Visible on main `Today` screen.
 - Background: `--color-bg`.
-- Three evenly spaced icon-only destinations.
+- Three evenly spaced destinations.
 - Active item: left destination, blue rounded-square checkbox icon.
 - Inactive items: gray calendar and hex/profile icons.
-- No text labels.
+- No visible text labels in the observed main bottom nav; accessibility text may exist in the native hierarchy.
 - Icons are centered in their slots.
 - Bottom safe area is black.
 
@@ -630,7 +669,8 @@ When to use cards vs plain sections:
 
 ### Tabs, Breadcrumbs, Stepper, Mobile Nav Menus
 
-- Tabs are not visible.
+- Top-level browser-style tabs are not visible.
+- Live TickTick uses compact segmented controls and filter chips in specific contexts: search filters, kanban date groups, background picker, and group/sort sheets.
 - Breadcrumbs are not visible.
 - Steppers are not visible.
 - Drawer acts as the mobile navigation menu.
@@ -710,6 +750,11 @@ Recommended default: if tags are needed, use muted text/icon styling until a vis
 
 Not clearly visible in the provided mockups.
 
+Live audit note:
+
+- A calendar subscription banner and a `Tap to go today` coach-mark tooltip were observed on the Calendar screen.
+- Use the Calendar rules in section 35 for those components.
+
 Recommended default:
 
 - Use bottom sheets or inline text before adding bright alert banners.
@@ -768,8 +813,14 @@ Do not add:
 
 ### Popovers/Dropdowns
 
-Not clearly visible in the provided mockups.
-Recommended default: use `--color-surface` with `--radius-lg`, no heavy border, and subtle shadow only if needed.
+Not clearly visible in the original static mockups, but multiple popovers were observed during the live audit.
+
+Recommended default:
+
+- Use `--color-surface-popover`.
+- Use `--radius-xl` to `--radius-2xl`.
+- Use row heights around `40dp`.
+- Use the detailed popover rules in section 31.
 
 ## 19. Images, Avatars, and Media
 
@@ -785,7 +836,14 @@ Recommended default: use `--color-surface` with `--radius-lg`, no heavy border, 
 
 ### Other Images/Media
 
-No thumbnails, image cards, empty-state illustrations, or media previews are visible.
+No thumbnails, image cards, or media previews are visible in the static mockups.
+
+Live audit additions:
+
+- Search empty states use centered, flat, muted gray illustrations with blue accents.
+- Plan Your Day onboarding uses a larger centered illustration.
+- Calendar banner uses a compact calendar icon illustration.
+- Do not substitute generic stock photos for these app illustrations.
 
 Recommended default:
 
@@ -969,13 +1027,20 @@ Recommended default:
   --color-bg-near-black: #050505;
   --color-surface: #1c1c1c;
   --color-surface-raised: #202020;
+  --color-surface-popover: #222222;
   --color-surface-selected: #232d48;
+  --color-surface-chip-selected: #1d2f55;
   --color-primary: #4774fa;
   --color-primary-bright: #4b78ff;
   --color-primary-soft-bg: #232d48;
+  --color-primary-banner: #4f79ff;
   --color-primary-sidebar-mark: #55a8ff;
   --color-danger: #da3e38;
   --color-danger-strong: #e64a45;
+  --color-critical: #ff5b57;
+  --color-success: #13c8a0;
+  --color-warning: #f7b43b;
+  --color-upgrade: #ff8a45;
   --color-text: #e6e6e6;
   --color-text-strong: #f1f1f1;
   --color-text-muted: #8a8a8a;
@@ -984,6 +1049,7 @@ Recommended default:
   --color-icon-muted: #8d8d8d;
   --color-border: #5e5e5e;
   --color-border-muted: #3f3f3f;
+  --color-divider: #343434;
   --color-avatar-badge: #d9d9d9;
   --color-overlay: rgba(0, 0, 0, 0.72);
   --color-overlay-strong: rgba(0, 0, 0, 0.82);
@@ -1077,7 +1143,7 @@ Currently uncertain details:
 - Light mode is not visible.
 - Desktop/tablet breakpoints are not visible.
 - Exact font family is not confirmed, only visually inferred as Android/system sans.
-- Exact density-independent measurement scale is not confirmed because screenshots are physical pixels.
+- Static mockup density is not confirmed. Live audit density is confirmed for the inspected phone as approximately `3.5` physical pixels per `1dp`.
 
 ## 25. Accuracy Requirements
 
@@ -1097,3 +1163,609 @@ Currently uncertain details:
 - Documented spacing, radius, borders, shadows, icons, buttons, inputs, cards, navigation, lists, status indicators, sheets, and avatars.
 - Included page-by-page notes for every mockup.
 - Marked uncertain/non-visible states instead of fabricating details.
+- Added live-audit measurements for TickTick Android screens and components that were not present in the static mockups.
+
+## 27. Live Audit Measurement Baseline
+
+The live audit was performed on the real TickTick Android app in dark mode. Treat these measurements as the best available reference for native Android proportions.
+
+Device and density:
+
+- Physical screenshot: `1440px x 3120px`.
+- Logical viewport: approximately `411dp x 891dp`.
+- Density conversion: `1dp` is approximately `3.5` physical screenshot pixels.
+- Status bar/safe top area: approximately `32dp`.
+- Android gesture/navigation area at bottom: approximately `15dp`.
+- Main interactive app frame between safe areas: approximately `411dp x 844dp`.
+
+General measured layout:
+
+- Top app bar begins below the status bar and is approximately `56dp` tall.
+- Top icon hit targets are approximately `56dp x 56dp`.
+- Main horizontal screen gutter is `16dp`.
+- Main card/list width on a `411dp` viewport is approximately `379dp`.
+- Drawer width is approximately `355dp`, or `86%` of the screen width.
+- Bottom navigation height is approximately `58dp`, above the Android gesture area.
+- FAB is approximately `56dp x 56dp`, positioned `20dp` from the right edge and `55dp` above the bottom navigation baseline.
+- Repeating task, drawer, and menu rows generally land on `40dp` to `48dp` vertical hit areas.
+
+When translating from this guide into Flutter or native Android:
+
+- Use `dp` for layout dimensions.
+- Use `sp` or logical font pixels for text sizes.
+- Do not use the raw `1440px` screenshot width as the design viewport.
+- Use the observed `411dp` viewport as the phone reference width.
+- Maintain all `16dp` outer gutters and `56dp` icon hit targets unless the component-specific notes below override them.
+
+State preservation note:
+
+- Live exploration avoided task-affecting actions.
+- Menus, sheets, settings pages, and view controls were inspected visually.
+- Task completion, delete, postpone, share, subscribe, list toggles, and task creation actions were not activated.
+- Temporary display surfaces such as kanban/list view and background tabs must be restored after audit or testing.
+
+## 28. System UI Boundaries
+
+Do not recreate these as app components:
+
+- Android status bar.
+- Screen recorder chip or notification overlays.
+- Android navigation gesture area.
+- Android keyboard.
+- Android keyboard toolbar, microphone, and suggestion strip.
+- System floating voice/assistant bubble.
+
+Observed system boundaries:
+
+- The status bar can tint black and sit above TickTick content. TickTick does not draw into it with custom decoration in the observed screens.
+- The app top bar starts immediately below the status bar.
+- Bottom navigation stops above the gesture/navigation area.
+- When the keyboard appears, TickTick sheets sit above it and the keyboard is purely system-provided.
+
+Implementation rule:
+
+- Reserve safe-area space but keep app chrome pure black or charcoal.
+- Never style a screenshot-only screen recorder chip, keyboard key, or system voice bubble as TickTick UI.
+
+## 29. Today Screen Live Measurements
+
+The Today screen is the primary reference for app density.
+
+Top app bar:
+
+- Height: approximately `56dp` after safe area.
+- Left icon: hamburger/menu, `56dp x 56dp` hit target.
+- Center title: `Today`, bold, left-aligned after the hamburger area.
+- Title baseline sits visually centered in the app bar.
+- Right icon cluster: daily reminder/lightbulb and overflow, each `48dp` to `56dp` hit target.
+- Icon color: `--color-icon`, no visible button background.
+- The top bar surface is `--color-bg`, not a separate card.
+
+Task list card geometry:
+
+- Outer horizontal gutter: `16dp`.
+- Section card width: approximately `379dp`.
+- Card radius: approximately `20dp` to `24dp`.
+- Card fill: `--color-surface`.
+- No shadow on default list cards.
+- No row separators inside default task section cards.
+- Section header row height: approximately `50dp`.
+- Task row height: approximately `44dp`.
+- Header content uses the same left/right insets as row content.
+
+Section header anatomy:
+
+- Left label: bold section heading.
+- Right action or count: blue `Postpone` action for overdue, muted count for ordinary sections.
+- Header vertical alignment: centered.
+- Header has more top/bottom air than task rows.
+
+Task row anatomy:
+
+- Left checkbox: square with rounded corners, approximately `20dp` to `24dp`.
+- Active checkbox outline: muted gray, no fill.
+- Completed checkbox: muted filled/outlined gray with check.
+- Text column starts approximately `36dp` to `40dp` from card left edge.
+- Task title is single-line with ellipsis.
+- Right date column is fixed-width and right-aligned.
+- Date text uses danger red only for overdue dates.
+- Completed task text and dates are muted, not struck through in the observed state.
+
+Blue project markers:
+
+- A thin vertical blue mark can appear near the left edge of a task row.
+- Width is approximately `2dp`.
+- Height is shorter than the row and vertically centered.
+- Use `--color-primary-sidebar-mark`.
+- The marker does not shift checkbox or text alignment.
+
+Bottom navigation:
+
+- Height: approximately `58dp`.
+- Three observed tabs: tasks/list, calendar, settings.
+- Each tab receives one third of the width, approximately `137dp`.
+- Active icon uses `--color-primary`.
+- Inactive icons use `--color-icon-muted`.
+- No visible text labels appear under the main tab icons in the observed Today screen.
+- No enclosing card, border, or top divider was prominent in the observed Today screen.
+
+FAB:
+
+- Size: `56dp`.
+- Shape: circle.
+- Fill: `--color-primary-bright`.
+- Icon: white plus, centered.
+- Shadow: soft blue glow, subtle black drop shadow.
+- Position: fixed above bottom nav, not inside a card.
+- It floats above content and should not reserve list layout space.
+
+## 30. Drawer Live Details
+
+Drawer container:
+
+- Width: approximately `355dp`, about `86%` of the viewport.
+- Height: full app height including behind top safe area.
+- Fill: `--color-surface`.
+- Right edge has a dimmed outside overlay, not a bright divider.
+- No visible rounded right corners.
+
+Drawer header:
+
+- Header height: approximately `122dp`.
+- Avatar size: approximately `40dp`.
+- Avatar x inset: approximately `21dp`.
+- Account name sits to the right of the avatar and is bold.
+- Search, notification, and settings icons sit on the right with `30dp` to `36dp` visual icons inside large hit targets.
+- Header controls are horizontally aligned around the avatar/name row.
+
+Drawer navigation rows:
+
+- Row horizontal inset: approximately `12dp`.
+- Row height: approximately `44dp`.
+- Selected row is a full-width rounded pill inside the drawer, not an underline.
+- Selected pill fill: `--color-primary-soft-bg`.
+- Selected icon and text: `--color-primary`.
+- Unselected rows: transparent.
+- Row icon size: approximately `24dp`.
+- Row label: bold, approximately `21dp` to `23dp`.
+- Count is right-aligned and muted.
+- Section/list names preserve user casing.
+
+Drawer footer:
+
+- Footer sits pinned near the bottom above gesture area.
+- `Add` action appears left, blue icon plus text.
+- Manage/settings action appears right as an icon-only target.
+- Footer controls use `44dp` to `48dp` hit areas.
+
+Do not:
+
+- Make the drawer a centered modal.
+- Add a white border to the drawer edge.
+- Use smaller desktop side-nav row heights.
+- Use a permanent desktop sidebar for the phone layout.
+
+## 31. Popovers and Anchored Menus
+
+TickTick popovers are dark, rounded, anchored surfaces. They are visually heavier than default cards but still restrained.
+
+Base popover:
+
+- Fill: `--color-surface-popover`.
+- Radius: approximately `20dp` to `24dp`.
+- Shadow: soft dark shadow around the edge, stronger than default cards.
+- Overlay: the underlying app dims subtly while the popover is open.
+- Horizontal padding: approximately `14dp` to `16dp`.
+- Row height: approximately `40dp`.
+- Icon column: fixed, approximately `40dp`.
+- Icon size: approximately `22dp` to `24dp`.
+- Text: `Popover Menu Text`.
+- Chevron, checkmark, and trailing icons align to the far right.
+
+Daily reminder popover:
+
+- Anchored below the lightbulb/daily reminder top action.
+- Width: approximately `187dp`.
+- Contains two rows: `Suggested Tasks`, `Plan Your Day`.
+- Rows are icon plus label, no dividers.
+- Top and bottom padding are approximately `10dp`.
+
+Today overflow menu:
+
+- Anchored below the top-right overflow icon.
+- Width: approximately `228dp`.
+- Row order observed: `View`, `Background`, `Show Details`, `Hide Completed`, divider, `Group & Sort`, `Select`, `Share`.
+- Only `View` has a chevron in the top-level observed menu.
+- A divider appears after `Hide Completed`.
+- Do not add dividers between every row.
+- Do not use a white selected row. Selection uses blue text/check or dark blue fill depending on the submenu.
+
+View submenu:
+
+- Reuses the same popover footprint.
+- Header row says `View` with a collapse/down chevron.
+- Divider under header.
+- Options: `List View`, `Kanban View`.
+- Selected option uses a blue checkmark.
+- Option text remains white, not blue, in the observed state.
+
+Calendar overflow menu:
+
+- Same surface and row system as Today overflow.
+- Row order observed: `Filter View Range`, `View Options`, `Arrange Tasks`, `Calendar Subscription`, `Share`, `Select`.
+- Width is approximately the same as the Today overflow menu.
+
+## 32. Search Screen
+
+Search opens as a full-screen page, not a bottom sheet.
+
+Top search row:
+
+- Safe top is preserved.
+- Search field x inset after back/search affordance: approximately `62dp`.
+- Search field height: approximately `38dp`.
+- Search field width on `411dp` viewport: approximately `276dp`.
+- Search field fill: `--color-surface`.
+- Search field radius: full pill.
+- Search icon sits inside the field at the left.
+- Placeholder/text uses `Search Field Text`.
+- Cursor and active affordances use `--color-primary`.
+- `Cancel` sits at the far right, blue, medium/bold.
+- Cancel hit target is at least `48dp` wide.
+
+Filter chips:
+
+- Chip row top gap from search row: approximately `15dp`.
+- Row x inset: `16dp`.
+- Chip height: approximately `28dp` to `32dp`.
+- Chip radius: full pill.
+- Horizontal gap between chips: approximately `12dp`.
+- Chip labels: `Task`, `Lists`, `Filter`.
+- Unselected chip fill: `--color-surface`.
+- Selected chip fill: `--color-surface-chip-selected`.
+- Selected chip text and icon: `--color-primary`.
+- Selected chip includes a small trailing close `x`.
+- Unselected chip text and icon are light/muted.
+
+Search empty states:
+
+- Illustration is centered vertically below chips.
+- Illustration style is simple, flat, muted gray with blue accent.
+- Empty instruction text is centered.
+- Text examples observed:
+  - `Type keywords to search Tasks`
+  - `Type keywords to search Lists`
+  - `Type keywords to search Filter`
+- Instruction text uses `--color-text-muted`.
+- The illustration changes per selected chip, but style and scale remain consistent.
+
+Keyboard state:
+
+- The Android keyboard appears when search input is focused.
+- Do not recreate keyboard styling in app UI.
+- Content above keyboard should avoid being hidden by it.
+
+## 33. Suggested Tasks and Plan Your Day
+
+Suggested Tasks is a full-screen page.
+
+Suggested Tasks top bar:
+
+- Left close/back icon has a `56dp` hit target.
+- Title starts after the close target.
+- Title text: bold, page-title scale.
+- Top bar height follows the standard app bar.
+- Surface remains black.
+
+Suggested Tasks card:
+
+- Outer gutter: `16dp`.
+- Card fill: `--color-surface`.
+- Radius: approximately `20dp` to `24dp`.
+- Header block height: approximately `70dp`.
+- Header label `Long Unfinished` uses primary blue.
+- Header description is muted and can wrap.
+- Header has a trailing chevron.
+- A single subtle divider separates header from task rows.
+- Task rows use the same checkbox/title/date/add-button anatomy as Today rows.
+- Right action is a blue plus icon, not a filled button.
+
+Plan Your Day onboarding:
+
+- Full-screen black page.
+- Top close/back icon is present.
+- Large illustration centered above text.
+- Title `Plan Your Day` is primary blue, large, bold.
+- Body copy is white/light gray and centered, with roomy line height.
+- Primary `Start` button is centered, wide, and filled blue.
+- Button width: approximately `288dp`.
+- Button height: approximately `40dp`.
+- Button radius: full pill or very large radius.
+- Secondary `Not Now` is blue text, centered below the button.
+- No card surrounds the onboarding content.
+
+Plan Your Day review flow:
+
+- Full-screen black page.
+- Top close icon at left.
+- Greeting text: large, muted gray/white, with emoji inline.
+- Subtitle/motto below greeting is smaller and muted.
+- Current task occupies a large vertical center area.
+- Bottom action bar contains five evenly spaced actions:
+  - `Done`
+  - `Today`
+  - `Later`
+  - `Won't Do`
+  - `Delete`
+- Each action has a large icon above a compact label.
+- Action bar targets are approximately one fifth of screen width and at least `58dp` tall.
+- These actions mutate tasks. Do not activate them in audits unless explicitly asked.
+
+## 34. View Modes, Selection, and List Options
+
+Kanban view:
+
+- Top app bar remains identical to Today list view.
+- Below the app bar, a horizontal pill row represents date groups.
+- Selected pill: dark blue fill, primary blue text.
+- Unselected pill: transparent or black background, muted/light text.
+- Pill height: approximately `36dp`.
+- Task cards become individual rounded cards instead of grouped section cards.
+- Individual task card outer gutter: approximately `21dp`.
+- Individual card height: approximately `48dp`.
+- Individual card radius: approximately `8dp` to `10dp`, smaller than section cards.
+- Individual card border: subtle `1dp` muted gray.
+- Adjacent kanban column can peek from the right, indicating horizontal scroll.
+- FAB and bottom nav remain fixed.
+
+List view:
+
+- Grouped section-card layout is the default reference.
+- Restoring from kanban should return to grouped `Overdue`, `Today`, `Completed` cards.
+
+Background picker sheet:
+
+- Bottom sheet anchored to the bottom.
+- Sheet fill: `--color-surface` or `--color-surface-raised`.
+- Top corners: approximately `24dp` to `28dp`.
+- No drag handle observed.
+- Segmented control sits near the top of the sheet.
+- Segment labels: `None`, `Color`, `Gradient`, `Image`.
+- Overall segmented control x inset: approximately `18dp`.
+- Segment height: approximately `36dp`.
+- Selected segment uses dark inner pill and light/blue text.
+- Unselected segment uses transparent or sheet-colored background with muted text.
+- Under the segmented control, `Follow app theme` appears centered and muted.
+- Color and gradient swatches are large rounded squares in a horizontal row.
+- Selected swatch shows a blue circular check badge.
+- Default app background remains black when `None` is selected.
+- Do not use picker swatches as global app theme unless implementing the actual background setting.
+
+Group & Sort sheet:
+
+- Bottom sheet with dim overlay.
+- No large visible title in the observed state.
+- Contains section heading `Group by`, then pill-grid options.
+- Contains section heading `Sort by`, then pill-grid options.
+- Grid is three columns where possible.
+- Option height: approximately `40dp`.
+- Option radius: full pill.
+- Selected option: filled primary blue with white text.
+- Unselected option: dark surface fill with light text.
+- Observed group options: `List`, `Date`, `Tag`, `Priority`.
+- Observed sort options: `Date`, `Title`, `Tag`, `Priority`.
+- Keep generous vertical spacing between heading and button rows.
+
+Select mode:
+
+- Entered from overflow `Select`.
+- Top bar changes to back/close icon and title `0 Selected`.
+- Task completion checkboxes become circular selection rings.
+- No task is selected by default.
+- Bottom action bar replaces normal bottom navigation.
+- Bottom actions observed: date/calendar, column/status, move/list, delete, more.
+- Icons are muted/disabled when `0 Selected`.
+- Bottom action hit targets remain large, approximately `56dp`.
+- Do not show labels in the observed select-mode bottom bar.
+
+## 35. Calendar Screen
+
+Calendar page top bar:
+
+- Page title: month name, e.g. `May`.
+- Title uses app page title styling and left alignment.
+- Right action cluster contains view/filter icon, calendar icon, and overflow.
+- Top icon targets are standard `56dp`.
+- Background remains black.
+
+Week strip:
+
+- Sits immediately below the top app bar.
+- Horizontal date cells are evenly spaced.
+- Weekday label sits above date number.
+- Weekday labels use muted text.
+- Date numbers are centered.
+- Selected/current date states:
+  - Filled blue circle with white number for selected date.
+  - White/light circle with primary blue number for today or alternate highlighted date.
+  - Small blue dots under date numbers indicate scheduled items.
+- Circle size: approximately `32dp` to `36dp`.
+- The week strip has no card container.
+
+Calendar tooltip:
+
+- Tooltip text observed: `Tap to go today`.
+- Dark rounded rectangle with a small pointer/notch.
+- Anchored near the date strip/calendar control.
+- Text is white/light.
+- Radius: approximately `8dp` to `10dp`.
+- Treat as transient in-app coach mark, not a permanent banner.
+
+Calendar subscription banner:
+
+- A blue promotional card can appear below the week strip.
+- Fill: `--color-primary-banner`.
+- Radius: approximately `14dp` to `18dp`.
+- Horizontal inset: `16dp`.
+- Icon: white calendar symbol inside a light/transparent circle.
+- Main copy is white and can wrap over two lines.
+- Close `x` icon appears top-right inside the banner.
+- Button row sits at the lower-right.
+- `Cancel` button is semi-transparent blue/dark overlay with white text.
+- `Subscribe` button is white fill with primary blue text.
+- Buttons are compact rounded rectangles, not full-width.
+- Do not click or auto-dismiss this banner in state-preserving audits.
+
+Calendar task/completed cards:
+
+- Below banner, task sections continue to use TickTick cards.
+- Muted completed items appear in dark cards.
+- Spacing remains aligned to the `16dp` page gutter.
+
+## 36. Settings Screens
+
+Settings root page:
+
+- Top page title: `Settings`, bold.
+- Main content scrolls between top app bar and bottom navigation.
+- Page background: black.
+- Cards use `--color-surface`.
+- Card outer gutter: `16dp`.
+- Card radius: approximately `18dp` to `24dp`.
+
+Account header:
+
+- Large avatar at left, approximately `56dp`.
+- Crown or premium badge can overlap the avatar.
+- Account name is bold and white.
+- Secondary level/badge row appears below the name.
+- Chevron appears at far right.
+- Entire row is a large tappable area.
+
+Premium card:
+
+- Dark card with orange/yellow premium icon.
+- Title: `Premium Account`.
+- Description text is muted and wraps.
+- `Upgrade Now` button is an outlined rounded rectangle.
+- Upgrade outline/text color: `--color-upgrade`.
+- Button is right-aligned within the card.
+
+Settings list groups:
+
+- Rows are grouped into rounded dark cards.
+- Row height is approximately `50dp`.
+- Icon column: approximately `44dp` wide.
+- Icons are colored, not monochrome, on settings pages.
+- Row title uses `Settings Row Title`.
+- Row descriptions use `Settings Row Description` when present.
+- Chevron or value appears at the far right.
+- Dividers are subtle and only between rows inside a group.
+- Do not add outer card borders.
+
+Observed root rows:
+
+- `Tab Bar`
+- `Appearance`
+- `Date & Time`
+- `Sounds & Notifications`
+- `Widgets`
+- `General`
+- `Integrations & Import`
+- `Recommend to Friends`
+- `Help & Feedback`
+- `Follow Us`
+
+Tab Bar settings page:
+
+- Top bar has back icon and title `Tab Bar`.
+- Row layout is a two-column action plus text structure.
+- Left control is an icon/action button or toggle affordance, approximately `32dp`.
+- Text block starts after a larger left control column, around `88dp` from screen left.
+- Enabled tab rows observed: `Task`, `Calendar`, `Settings`.
+- Disabled section label `Disabled` appears muted and small.
+- Disabled rows observed: `Eisenhower Matrix`, `Pomodoro`, `Habit Tracker`, `Countdown`, `Search`.
+- `Max number of tabs` row has value `5` on the right and description `Over-limited tabs will be shown in More.`
+- Avoid changing toggles or tab order when auditing style.
+
+Settings bottom navigation:
+
+- Settings tab active state uses primary blue.
+- On subpages such as `Tab Bar`, bottom navigation can appear as icon-only.
+- Preserve the same fixed bottom area and safe-area spacing.
+
+## 37. Task Detail Action Sheets
+
+Task detail bottom sheet is documented above; live audit added the nested action surfaces.
+
+Task detail overflow sheet:
+
+- Opens from the task detail overflow menu.
+- Presented as a bottom sheet over a dimmed task detail sheet.
+- Top row is a four-action grid:
+  - `Pin`, yellow/warning icon.
+  - `Share`, green/success icon.
+  - `Won't Do`, blue icon.
+  - `Delete`, red/critical icon.
+- Each action target is approximately `56dp` to `64dp` wide with icon above label.
+- Labels are compact and muted/light.
+- Dangerous action uses red icon but does not fill the whole tile red.
+
+Action menu cards:
+
+- Below the top action grid, rows are grouped in rounded dark cards.
+- Card gutter: `16dp`.
+- Row height: approximately `48dp`.
+- Row text: white/light, regular weight.
+- Row icons: right-aligned in the observed sheet.
+- Dividers are subtle or absent depending on row group.
+
+Observed rows in the first task-detail overflow sheet:
+
+- `Add Subtask`
+- `Convert to Note`
+- `Attachment`
+- `Tags`
+- `Task Activities`
+- Separate row/card: `More`
+
+Nested `More` sheet:
+
+- Header row has a back/close icon and title `More`.
+- Same bottom-sheet surface and top radius.
+- Rows observed:
+  - `Comment`
+  - `Location`
+  - `Copy Link`
+  - `Duplicate`
+  - `Save & New`
+  - `Save as Template`
+  - `Edit`
+- Rows use the same `48dp` approximate height and dark grouped-card pattern.
+- These rows are potential task-affecting actions. Do not activate them during visual audits.
+
+## 38. Live-Audit Implementation Checklist
+
+Before shipping UI intended to match TickTick, compare against this checklist:
+
+- Phone viewport uses approximately `411dp` as the reference width.
+- Safe areas are respected: app top bar below status bar, bottom nav above gesture area.
+- Main gutters are `16dp`.
+- Top icon hit targets are `48dp` to `56dp`.
+- Default background is pure black.
+- Default cards and sheets use charcoal, not blue-tinted or gray web-card surfaces.
+- Section task cards are rounded and divider-free.
+- Kanban individual cards use smaller radius and subtle borders.
+- FAB is a `56dp` blue circle with a soft glow.
+- Active/selected state means primary blue; inactive means muted gray.
+- Overdue dates use danger red.
+- Explicit destructive icons use critical red.
+- Popovers are anchored, rounded, dark, and row-based.
+- Bottom sheets use rounded top corners and dimmed background.
+- Search is a full-screen page with a pill field, blue cancel action, chips, and centered empty state.
+- Calendar uses a week strip with circular date states, not a full web calendar grid by default.
+- Settings uses grouped cards with colorful icons and large mobile rows.
+- Task detail nested actions use action grids and grouped dark row cards.
+- Gradients appear only in the background-picker swatches unless implementing user-selected backgrounds.
+- System keyboard, status bar, screen recorder chip, and Android overlays are not recreated as app UI.
+- No task-affecting audit/test action should be required to verify the visual system.
