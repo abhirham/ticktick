@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/theme.dart';
-import '../../features/tasks/application/visual_fixture.dart';
+import '../../features/lists/application/list_group_providers.dart';
 import '../../features/tasks/application/task_providers.dart';
 import '../../features/tasks/presentation/widgets/quick_add_sheet.dart';
 
@@ -130,13 +130,16 @@ class FlowDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = context.colors;
-    final todayCount = flowTaskVisualFixtureEnabled
-        ? 9
-        : ref.watch(todayTasksProvider).valueOrNull?.length ?? 0;
-    final inboxCount = flowTaskVisualFixtureEnabled
-        ? 21
-        : ref.watch(inboxOpenCountProvider).valueOrNull ?? 0;
-    final currentPath = GoRouterState.of(context).uri.path;
+    final routerState = GoRouterState.of(context);
+    final currentPath = routerState.uri.path;
+    final selectedListId = routerState.uri.queryParameters['list'];
+    final todayCount = ref.watch(todayTasksProvider).valueOrNull?.length ?? 0;
+    final openCount = ref.watch(openTaskCountProvider).valueOrNull ?? 0;
+    final completedCount =
+        ref.watch(completedTaskCountProvider).valueOrNull ?? 0;
+    final trashCount = ref.watch(trashTaskCountProvider).valueOrNull ?? 0;
+    final summariesAsync = ref.watch(listSummariesProvider);
+    final summaries = summariesAsync.valueOrNull ?? const [];
 
     return Drawer(
       width: MediaQuery.sizeOf(context).width * 0.86,
@@ -185,7 +188,7 @@ class FlowDrawer extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(width: 18),
+                    const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         'Abhirham Savarap',
@@ -199,15 +202,14 @@ class FlowDrawer extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Icon(Icons.search_rounded, color: colors.icon, size: 24),
-                    const SizedBox(width: 15),
-                    Icon(
-                      Icons.notifications_none_rounded,
-                      color: colors.icon,
-                      size: 24,
+                    IconButton(
+                      tooltip: 'Settings',
+                      onPressed: () => _go(context, '/settings'),
+                      color: currentPath == '/settings'
+                          ? colors.primary
+                          : colors.icon,
+                      icon: const Icon(Icons.settings_outlined),
                     ),
-                    const SizedBox(width: 15),
-                    Icon(Icons.hexagon_outlined, color: colors.icon, size: 24),
                   ],
                 ),
               ),
@@ -220,49 +222,78 @@ class FlowDrawer extends ConsumerWidget {
                 onTap: () => _go(context, '/today'),
               ),
               _DrawerItem(
-                icon: Icons.inbox_outlined,
-                label: 'Inbox',
-                count: inboxCount,
-                active: false,
+                icon: Icons.calendar_today_rounded,
+                label: 'Calendar',
+                active: currentPath == '/calendar',
+                blueIcon: true,
+                onTap: () => _go(context, '/calendar'),
+              ),
+              _DrawerItem(
+                icon: Icons.checklist_rounded,
+                label: 'All Tasks',
+                count: openCount,
+                active: currentPath == '/all',
                 blueIcon: true,
                 onTap: () => _go(context, '/all'),
               ),
               _DrawerItem(
-                icon: Icons.subject_rounded,
-                label: 'today only',
-                count: 1,
-                active: false,
-                blueIcon: true,
-                onTap: () => _go(context, '/lists'),
+                icon: Icons.check_circle_outline_rounded,
+                label: 'Completed',
+                count: completedCount,
+                active: currentPath == '/completed',
+                onTap: () => _go(context, '/completed'),
               ),
               _DrawerItem(
-                icon: Icons.menu_rounded,
-                label: 'Skin care',
-                count: 3,
-                active: false,
-                onTap: () => _go(context, '/lists'),
+                icon: Icons.delete_outline_rounded,
+                label: 'Trash',
+                count: trashCount,
+                active: currentPath == '/trash',
+                onTap: () => _go(context, '/trash'),
               ),
               _DrawerItem(
-                icon: Icons.menu_rounded,
-                label: 'Utilities',
-                count: 6,
-                active: false,
-                onTap: () => _go(context, '/lists'),
+                icon: Icons.settings_outlined,
+                label: 'Settings',
+                active: currentPath == '/settings',
+                onTap: () => _go(context, '/settings'),
               ),
+              const SizedBox(height: 10),
+              const _DrawerSectionLabel(label: 'Lists'),
+              if (summariesAsync.isLoading)
+                const _DrawerMessage(text: 'Loading lists...')
+              else if (summaries.isEmpty)
+                const _DrawerMessage(text: 'No lists yet.')
+              else
+                for (final summary in summaries)
+                  _DrawerItem(
+                    icon: summary.list.isSystemList
+                        ? Icons.inbox_outlined
+                        : Icons.menu_rounded,
+                    iconColor: _colorFromHex(summary.list.color, colors.icon),
+                    label: summary.list.name,
+                    count: summary.openTaskCount,
+                    active:
+                        currentPath == '/lists' &&
+                        selectedListId == summary.list.id,
+                    onTap: () => _go(
+                      context,
+                      '/lists?list=${Uri.encodeComponent(summary.list.id)}',
+                    ),
+                  ),
+              if (summariesAsync.hasError)
+                const _DrawerMessage(text: 'Lists unavailable.', danger: true),
               _DrawerItem(
-                icon: Icons.menu_rounded,
-                label: 'Bank',
-                count: 9,
-                active: false,
+                icon: Icons.view_list_outlined,
+                label: 'Manage Lists',
+                active: currentPath == '/lists' && selectedListId == null,
                 onTap: () => _go(context, '/lists'),
               ),
               const Spacer(),
               Row(
                 children: [
                   TextButton.icon(
-                    onPressed: () => _go(context, '/lists'),
+                    onPressed: () => _openQuickAdd(context),
                     icon: const Icon(Icons.add_box_outlined),
-                    label: const Text('Add'),
+                    label: const Text('Add Task'),
                     style: TextButton.styleFrom(
                       foregroundColor: colors.text,
                       textStyle: const TextStyle(
@@ -275,7 +306,7 @@ class FlowDrawer extends ConsumerWidget {
                   IconButton(
                     tooltip: 'Manage lists',
                     onPressed: () => _go(context, '/lists'),
-                    icon: Icon(Icons.manage_search_rounded, color: colors.icon),
+                    icon: Icon(Icons.view_list_outlined, color: colors.icon),
                   ),
                 ],
               ),
@@ -290,24 +321,35 @@ class FlowDrawer extends ConsumerWidget {
     Navigator.of(context).pop();
     context.go(path);
   }
+
+  void _openQuickAdd(BuildContext context) {
+    Navigator.of(context).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        showQuickAddSheet(context);
+      }
+    });
+  }
 }
 
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({
     required this.icon,
     required this.label,
-    required this.count,
     required this.active,
     required this.onTap,
+    this.count,
     this.blueIcon = false,
+    this.iconColor,
   });
 
   final IconData icon;
   final String label;
-  final int count;
+  final int? count;
   final bool active;
   final VoidCallback onTap;
   final bool blueIcon;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -328,7 +370,9 @@ class _DrawerItem extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: active || blueIcon ? colors.primary : colors.icon,
+                color: active || blueIcon
+                    ? colors.primary
+                    : iconColor ?? colors.icon,
                 size: 20,
               ),
               const SizedBox(width: 14),
@@ -344,14 +388,76 @@ class _DrawerItem extends StatelessWidget {
                   ),
                 ),
               ),
-              Text(
-                '$count',
-                style: TextStyle(color: colors.textMuted, fontSize: 14.5),
-              ),
+              if (count != null)
+                Text(
+                  '$count',
+                  style: TextStyle(color: colors.textMuted, fontSize: 14.5),
+                ),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+class _DrawerSectionLabel extends StatelessWidget {
+  const _DrawerSectionLabel({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(13, 8, 13, 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          label,
+          style: TextStyle(
+            color: colors.textMuted,
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            height: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerMessage extends StatelessWidget {
+  const _DrawerMessage({required this.text, this.danger = false});
+
+  final String text;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          text,
+          style: TextStyle(
+            color: danger ? colors.danger : colors.textMuted,
+            fontSize: 14.5,
+            height: 1.25,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Color _colorFromHex(String value, Color fallback) {
+  final sanitized = value.replaceFirst('#', '');
+  if (sanitized.length != 6) {
+    return fallback;
+  }
+  final color = int.tryParse('FF$sanitized', radix: 16);
+  return color == null ? fallback : Color(color);
 }

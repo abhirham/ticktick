@@ -85,6 +85,45 @@ void main() {
     expect(today.map((task) => task.title), isNot(contains('Tomorrow')));
   });
 
+  test(
+    'today filtering honors overdue and persistent visibility flags',
+    () async {
+      await repository.createTask(TaskDraft(title: 'Due today', dueDate: now));
+      await repository.createTask(
+        TaskDraft(
+          title: 'Overdue',
+          dueDate: now.subtract(const Duration(days: 1)),
+        ),
+      );
+      await repository.createTask(
+        const TaskDraft(
+          title: 'Persistent no date',
+          isPersistent: true,
+          showInTodayUntilComplete: true,
+        ),
+      );
+
+      final defaultToday = await repository.watchTodayTasks(today: now).first;
+      final todayWithOverdue = await repository
+          .watchTodayTasks(today: now, includeOverdue: true)
+          .first;
+      final todayWithoutPersistent = await repository
+          .watchTodayTasks(today: now, includePersistent: false)
+          .first;
+
+      expect(defaultToday.map((task) => task.title), [
+        'Due today',
+        'Persistent no date',
+      ]);
+      expect(
+        todayWithOverdue.map((task) => task.title),
+        containsAll(['Overdue', 'Due today', 'Persistent no date']),
+      );
+      expect(todayWithOverdue, hasLength(3));
+      expect(todayWithoutPersistent.map((task) => task.title), ['Due today']);
+    },
+  );
+
   test('persistent task created yesterday is carried forward today', () async {
     final yesterday = now;
     final task = await repository.createTask(
@@ -126,6 +165,55 @@ void main() {
       expect(completed.single.dueDate, DateTime(2026, 5, 12));
     },
   );
+
+  test('completed and trash counts follow status transitions', () async {
+    final keepOpen = await repository.createTask(
+      const TaskDraft(title: 'Keep open'),
+    );
+    final completeMe = await repository.createTask(
+      const TaskDraft(title: 'Complete me'),
+    );
+    final trashMe = await repository.createTask(
+      const TaskDraft(title: 'Trash me'),
+    );
+
+    expect(await repository.watchOpenCount().first, 3);
+
+    await repository.completeTask(completeMe.id);
+    await repository.moveTaskToTrash(trashMe.id);
+
+    expect(await repository.watchOpenCount().first, 1);
+    expect(await repository.watchCompletedCount().first, 1);
+    expect(await repository.watchTrashCount().first, 1);
+    expect((await repository.watchAllOpenTasks().first).single.id, keepOpen.id);
+
+    await repository.reopenTask(completeMe.id);
+    await repository.restoreTask(trashMe.id);
+
+    expect(await repository.watchOpenCount().first, 3);
+    expect(await repository.watchCompletedCount().first, 0);
+    expect(await repository.watchTrashCount().first, 0);
+  });
+
+  test('moving and clearing dates keeps time state consistent', () async {
+    final task = await repository.createTask(
+      const TaskDraft(title: 'Schedule me', dueTime: '14:30', isAllDay: false),
+    );
+
+    await repository.moveTaskToDate(id: task.id, date: DateTime(2026, 5, 20));
+    var updated = await repository.watchTask(task.id).first;
+
+    expect(updated!.dueDate, DateTime(2026, 5, 20));
+    expect(updated.dueTime, '14:30');
+    expect(updated.isAllDay, isFalse);
+
+    await repository.clearTaskDate(task.id);
+    updated = await repository.watchTask(task.id).first;
+
+    expect(updated!.dueDate, isNull);
+    expect(updated.dueTime, isNull);
+    expect(updated.isAllDay, isTrue);
+  });
 
   test('persistent carry-forward preserves original due date', () async {
     final yesterday = now;

@@ -10,6 +10,7 @@ import 'package:flowtask/features/settings/application/settings_providers.dart';
 import 'package:flowtask/features/settings/data/settings_repository.dart';
 import 'package:flowtask/features/settings/presentation/settings_screen.dart';
 import 'package:flowtask/features/tasks/application/task_providers.dart';
+import 'package:flowtask/features/widget/data/widget_data_service.dart';
 
 void main() {
   late AppDatabase database;
@@ -103,6 +104,38 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pump();
   });
+
+  testWidgets('widget options persist and refresh widget settings', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_settingsHarness(database));
+    await tester.pumpAndSettle();
+
+    await _selectOption(
+      tester,
+      rowKey: 'settings_option_widgetDisplayMode',
+      optionKey: 'settings_option_widgetDisplayMode_countAndTitles',
+    );
+    final lockScreenToggle = find.byKey(
+      const ValueKey('settings_toggle_widgetShowsLockScreenTitles'),
+    );
+    await _scrollTo(tester, lockScreenToggle);
+    await tester.tap(lockScreenToggle);
+    await tester.pumpAndSettle();
+    await _selectOption(
+      tester,
+      rowKey: 'settings_option_widgetTapDestination',
+      optionKey: 'settings_option_widgetTapDestination_calendar',
+    );
+
+    final settings = await repository.readSettings();
+    expect(settings.widgetDisplayMode, 'countAndTitles');
+    expect(settings.widgetShowsLockScreenTitles, isTrue);
+    expect(settings.widgetTapDestination, 'calendar');
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+  });
 }
 
 Future<void> _selectOption(
@@ -123,11 +156,7 @@ Future<void> _scrollTo(WidgetTester tester, Finder finder) async {
   if (finder.evaluate().isEmpty) {
     await tester.drag(scrollable, const Offset(0, 900));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(
-      finder,
-      280,
-      scrollable: scrollable,
-    );
+    await tester.scrollUntilVisible(finder, 280, scrollable: scrollable);
   } else {
     await tester.ensureVisible(finder);
   }
@@ -138,6 +167,7 @@ Widget _settingsHarness(AppDatabase database) {
   return ProviderScope(
     overrides: [
       appDatabaseProvider.overrideWithValue(database),
+      widgetDataServiceProvider.overrideWithValue(WidgetDataService(database)),
       flowTaskSettingsProvider.overrideWith(
         (ref) => Stream.fromFuture(SettingsRepository(database).readSettings()),
       ),

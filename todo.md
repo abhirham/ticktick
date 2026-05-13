@@ -5,9 +5,9 @@
 - [x] Do another phone pass against `style-guide.md` for Today, drawer, quick add, task detail, calendar, lists, and settings.
 - [x] Confirm text scale, row height, card radius, icon size, and safe-area spacing match the reference screenshots on the Samsung device.
 - [x] Capture fresh screenshots for each main screen and keep them under `build/screenshots/` for comparison.
-- [ ] Fix any remaining default Material-looking controls, dialogs, inputs, pickers, or buttons.
+- [x] Fix any remaining default Material-looking controls, dialogs, inputs, pickers, or buttons.
 - [x] Verify quick-add and task-detail sheets with the keyboard open and closed.
-- [ ] [in progress: codex/phone-smoke] Verify long list names and large Android font settings do not overflow.
+- [x] Verify long list names and large Android font settings do not overflow.
 
 ## Task Basics
 
@@ -34,7 +34,7 @@
 - [x] Add editable parsed chips for date, time, repeat, reminder, priority, list, group, and persistent.
 - [x] Support removing parsed chips before saving.
 - [x] Add list/group confirmation or warning behavior when parsed list/group does not exist.
-- [x] Finish Natural Language Debug Screen output for raw input, cleaned title, parsed metadata, and warnings.
+- [x] Replace the Natural Language Debug Screen with production parser/form coverage and remove the debug route.
 - [x] Add parser tests for ambiguous dates, missing years, time without date, list/group syntax, reminders, recurrence, and persistent phrases.
 
 ## Persistent Tasks
@@ -111,18 +111,18 @@
 
 ## Tests And QA
 
-- [ ] [in progress: codex/qa] Expand repository tests beyond the current baseline.
-- [ ] [in progress: codex/qa] Add unit tests for task repository, parser, recurrence engine, reminders, list/group repository, Today query, completed/trash behavior, calendar query, and widget count.
-- [ ] [in progress: codex/qa] Add widget tests for Today, Calendar, Add Task, Task Detail, List Detail, grouped list UI, reminder editor, natural-language chips, and widget settings.
-- [ ] [in progress: codex/qa] Add feasible native/widget tests for Android and iOS widget snapshots.
-- [ ] [in progress: codex/qa] Add integration tests for the core acceptance flows.
+- [x] Expand repository tests beyond the current baseline.
+- [x] Add unit tests for task repository, parser, recurrence engine, reminders, list/group repository, Today query, completed/trash behavior, calendar query, and widget count.
+- [x] Add widget tests for Today, Calendar, Add Task, Task Detail, List Detail, grouped list UI, reminder editor, natural-language chips, and widget settings.
+- [x] Add feasible native/widget tests for Android and iOS widget snapshots.
+- [x] Add integration-style widget tests for the core acceptance flows.
 - [x] Run `flutter analyze` before each checkpoint.
 - [x] Run `flutter test` before each checkpoint.
-- [ ] [in progress: codex/main] Keep committing small checkpoints with clear messages.
+- [x] Keep committing small checkpoints with clear messages.
 
 ## Cleanup
 
 - [x] Decide whether to keep, delete, or commit `assets/brand/flowtask-icon.svg`.
-- [ ] [in progress: codex/main] Review docs for drift after implementation changes.
-- [ ] [in progress: codex/main] Remove any dead code, placeholder UI, or unused routes.
-- [ ] [in progress: codex/main] Audit all buttons so unsupported actions are disabled or implemented.
+- [x] Review docs for drift after implementation changes.
+- [x] Remove any dead code, placeholder UI, or unused routes.
+- [x] Audit all buttons so unsupported actions are disabled or implemented.

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../app/providers.dart';
 import '../../../../app/theme.dart';
 import '../../../../core/time/flow_date_utils.dart';
+import '../../../../data/local/app_database.dart';
 import '../../../../shared/presentation/flow_bottom_sheet.dart';
 import '../../application/task_providers.dart';
 import '../../domain/task_enums.dart';
@@ -26,8 +28,8 @@ class TaskDetailSheet extends ConsumerWidget {
     final colors = context.colors;
     final taskAsync = ref.watch(taskByIdProvider(taskId));
     return taskAsync.when(
-      loading: () => const _TaskDetailSheetFrame(
-        child: Center(child: CircularProgressIndicator()),
+      loading: () => _TaskDetailSheetFrame(
+        child: Center(child: CircularProgressIndicator(color: colors.primary)),
       ),
       error: (error, _) => _TaskDetailSheetFrame(
         child: Center(
@@ -51,6 +53,9 @@ class TaskDetailSheet extends ConsumerWidget {
 
         final isCompleted =
             TaskStatus.fromValue(task.status) == TaskStatus.completed;
+        final priority = TaskPriority.fromValue(task.priority);
+        final lists = ref.watch(taskListsProvider).valueOrNull ?? const [];
+        final listName = _listName(lists, task.listId);
         final dateText = task.dueDate == null
             ? 'No date'
             : detailDateLabel(task.dueDate!, DateTime.now());
@@ -61,24 +66,24 @@ class TaskDetailSheet extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Text(
-                    'Inbox',
-                    style: TextStyle(
-                      color: colors.textStrong,
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
+                  Expanded(
+                    child: Text(
+                      listName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: colors.textStrong,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Icon(
-                    Icons.unfold_more_rounded,
-                    color: colors.iconMuted,
-                    size: 22,
-                  ),
-                  const Spacer(),
-                  Icon(Icons.flag_outlined, color: colors.icon, size: 24),
-                  const SizedBox(width: 18),
-                  Icon(Icons.more_vert_rounded, color: colors.icon, size: 26),
+                  const SizedBox(width: 10),
+                  if (priority != TaskPriority.none)
+                    _SheetInfoPill(
+                      icon: Icons.flag_outlined,
+                      label: priority.label,
+                    ),
                 ],
               ),
               const SizedBox(height: 28),
@@ -122,22 +127,39 @@ class TaskDetailSheet extends ConsumerWidget {
               const Spacer(),
               Row(
                 children: [
-                  Icon(
-                    Icons.local_offer_outlined,
-                    color: colors.iconMuted,
-                    size: 24,
+                  Expanded(
+                    child: _SheetActionButton(
+                      icon: Icons.open_in_new_rounded,
+                      label: 'Open Details',
+                      onTap: () {
+                        final router = GoRouter.of(context);
+                        Navigator.of(context).pop();
+                        router.go('/task/${task.id}');
+                      },
+                    ),
                   ),
-                  const SizedBox(width: 22),
-                  Icon(
-                    Icons.format_list_bulleted_rounded,
-                    color: colors.iconMuted,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 22),
-                  Icon(
-                    Icons.attach_file_rounded,
-                    color: colors.iconMuted,
-                    size: 24,
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SheetActionButton(
+                      icon: isCompleted
+                          ? Icons.replay_rounded
+                          : Icons.check_rounded,
+                      label: isCompleted ? 'Reopen' : 'Complete',
+                      onTap: () async {
+                        if (isCompleted) {
+                          await ref
+                              .read(taskRepositoryProvider)
+                              .reopenTask(task.id);
+                        } else {
+                          await ref
+                              .read(taskRepositoryProvider)
+                              .completeTask(task.id);
+                        }
+                        if (context.mounted) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -145,6 +167,100 @@ class TaskDetailSheet extends ConsumerWidget {
           ),
         );
       },
+    );
+  }
+}
+
+String _listName(List<TaskList> lists, String selectedId) {
+  for (final list in lists) {
+    if (list.id == selectedId) {
+      return list.name;
+    }
+  }
+  return selectedId == AppDatabase.inboxListId ? 'Inbox' : 'List';
+}
+
+class _SheetInfoPill extends StatelessWidget {
+  const _SheetInfoPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      height: 34,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: colors.surfaceRaised,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: colors.primary, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: colors.text,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SheetActionButton extends StatelessWidget {
+  const _SheetActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        height: 44,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: colors.surfaceRaised,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: colors.primary, size: 19),
+            const SizedBox(width: 7),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.text,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  height: 1.2,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

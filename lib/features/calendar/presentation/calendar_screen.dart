@@ -55,11 +55,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                 tooltip: 'Go to today',
                 onPressed: _goToday,
               ),
-              FlowIconButton(
-                icon: Icons.more_vert_rounded,
-                tooltip: 'Calendar options',
-                onPressed: _showViewSheet,
-              ),
             ],
           ),
           Expanded(

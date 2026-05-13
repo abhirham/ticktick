@@ -5,7 +5,6 @@ import '../features/calendar/presentation/calendar_screen.dart';
 import '../features/lists/presentation/lists_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/tasks/presentation/screens/add_task_screen.dart';
-import '../features/tasks/presentation/screens/natural_language_debug_screen.dart';
 import '../features/tasks/presentation/screens/task_collection_screen.dart';
 import '../features/tasks/presentation/screens/task_detail_screen.dart';
 import '../features/tasks/presentation/screens/today_screen.dart';
@@ -51,11 +50,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             path: '/settings',
             pageBuilder: (context, state) =>
                 const NoTransitionPage(child: SettingsScreen()),
-          ),
-          GoRoute(
-            path: '/natural-language-debug',
-            pageBuilder: (context, state) =>
-                const NoTransitionPage(child: NaturalLanguageDebugScreen()),
           ),
           GoRoute(
             path: '/all',

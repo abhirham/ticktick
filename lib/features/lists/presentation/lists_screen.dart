@@ -49,7 +49,11 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     final trashCount = ref.watch(trashTaskCountProvider).valueOrNull ?? 0;
     final summariesAsync = ref.watch(listSummariesProvider);
     final summaries = summariesAsync.valueOrNull ?? const <TaskListSummary>[];
-    final selectedSummary = _selectedSummary(summaries);
+    final routeListId = _routeListId(context);
+    final selectedSummary = _selectedSummary(
+      summaries,
+      _selectedListId ?? routeListId,
+    );
 
     return ColoredBox(
       color: colors.bg,
@@ -168,16 +172,27 @@ class _ListsScreenState extends ConsumerState<ListsScreen> {
     );
   }
 
-  TaskListSummary? _selectedSummary(List<TaskListSummary> summaries) {
+  TaskListSummary? _selectedSummary(
+    List<TaskListSummary> summaries,
+    String? selectedListId,
+  ) {
     if (summaries.isEmpty) {
       return null;
     }
     for (final summary in summaries) {
-      if (summary.list.id == _selectedListId) {
+      if (summary.list.id == selectedListId) {
         return summary;
       }
     }
     return summaries.first;
+  }
+
+  String? _routeListId(BuildContext context) {
+    try {
+      return GoRouterState.of(context).uri.queryParameters['list'];
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _moveList(
