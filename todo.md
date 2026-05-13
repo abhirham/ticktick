@@ -121,7 +121,7 @@
 
 ## Cleanup
 
-- [ ] Decide whether to keep, delete, or commit `assets/brand/flowtask-icon.svg`.
+- [x] Decide whether to keep, delete, or commit `assets/brand/flowtask-icon.svg`.
 - [ ] Review docs for drift after implementation changes.
 - [ ] Remove any dead code, placeholder UI, or unused routes.
 - [ ] Audit all buttons so unsupported actions are disabled or implemented.
