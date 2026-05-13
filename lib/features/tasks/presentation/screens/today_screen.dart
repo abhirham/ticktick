@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers.dart';
 import '../../../../app/theme.dart';
+import '../../../../core/time/flow_date_utils.dart';
+import '../../../../data/local/app_database.dart';
 import '../../application/task_providers.dart';
 import '../widgets/task_detail_sheet.dart';
 import '../widgets/task_widgets.dart';
@@ -28,18 +30,6 @@ class TodayScreen extends ConsumerWidget {
               tooltip: 'Open lists',
               onPressed: () => Scaffold.of(context).openDrawer(),
             ),
-            actions: [
-              FlowIconButton(
-                icon: Icons.tips_and_updates_outlined,
-                tooltip: 'Ideas',
-                onPressed: () {},
-              ),
-              FlowIconButton(
-                icon: Icons.more_vert_rounded,
-                tooltip: 'Today options',
-                onPressed: () {},
-              ),
-            ],
           ),
           Expanded(
             child: ListView(
@@ -50,10 +40,13 @@ class TodayScreen extends ConsumerWidget {
                     title: 'Overdue',
                     tasks: tasks,
                     emptyText: 'No overdue tasks.',
-                    action: SectionTextAction(
-                      label: 'Postpone',
-                      onPressed: () {},
-                    ),
+                    action: tasks.isEmpty
+                        ? null
+                        : SectionTextAction(
+                            label: 'Postpone',
+                            onPressed: () =>
+                                _postponeOverdueTasks(context, ref, tasks),
+                          ),
                     showProjectMarkers: true,
                     onTaskTap: (task) => showTaskDetailSheet(context, task.id),
                     onToggleTask: (task) async {
@@ -121,6 +114,40 @@ class TodayScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+Future<void> _postponeOverdueTasks(
+  BuildContext context,
+  WidgetRef ref,
+  List<TaskItem> tasks,
+) async {
+  final originalDueDates = {
+    for (final task in tasks)
+      if (task.dueDate != null) task.id: task.dueDate!,
+  };
+  if (originalDueDates.isEmpty) {
+    return;
+  }
+
+  final repository = ref.read(taskRepositoryProvider);
+  final today = dateOnly(ref.read(todayDateProvider));
+  for (final id in originalDueDates.keys) {
+    await repository.moveTaskToDate(id: id, date: today);
+  }
+
+  if (context.mounted) {
+    _showUndoSnackBar(
+      context,
+      originalDueDates.length == 1
+          ? 'Task postponed to today.'
+          : '${originalDueDates.length} tasks postponed to today.',
+      () async {
+        for (final entry in originalDueDates.entries) {
+          await repository.moveTaskToDate(id: entry.key, date: entry.value);
+        }
+      },
     );
   }
 }

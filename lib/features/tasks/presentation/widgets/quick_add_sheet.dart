@@ -168,7 +168,6 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
               ),
               _ToolbarIcon(icon: Icons.repeat_rounded, onTap: _showRepeatMenu),
               const Spacer(),
-              _ToolbarIcon(icon: Icons.mic_none_rounded, onTap: () {}),
             ],
           ),
         ],
