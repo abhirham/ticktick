@@ -56,8 +56,16 @@ class TodayScreen extends ConsumerWidget {
                     ),
                     showProjectMarkers: true,
                     onTaskTap: (task) => showTaskDetailSheet(context, task.id),
-                    onToggleTask: (task) {
-                      ref.read(taskRepositoryProvider).completeTask(task.id);
+                    onToggleTask: (task) async {
+                      final repository = ref.read(taskRepositoryProvider);
+                      await repository.completeTask(task.id);
+                      if (context.mounted) {
+                        _showUndoSnackBar(
+                          context,
+                          'Task completed.',
+                          () => repository.reopenTask(task.id),
+                        );
+                      }
                     },
                   ),
                   loading: () => const _LoadingCard(title: 'Overdue'),
@@ -70,8 +78,16 @@ class TodayScreen extends ConsumerWidget {
                     tasks: tasks,
                     emptyText: 'No tasks due today.',
                     onTaskTap: (task) => showTaskDetailSheet(context, task.id),
-                    onToggleTask: (task) {
-                      ref.read(taskRepositoryProvider).completeTask(task.id);
+                    onToggleTask: (task) async {
+                      final repository = ref.read(taskRepositoryProvider);
+                      await repository.completeTask(task.id);
+                      if (context.mounted) {
+                        _showUndoSnackBar(
+                          context,
+                          'Task completed.',
+                          () => repository.reopenTask(task.id),
+                        );
+                      }
                     },
                   ),
                   loading: () => const _LoadingCard(title: 'Today'),
@@ -85,8 +101,16 @@ class TodayScreen extends ConsumerWidget {
                     emptyText: 'Completed tasks will collect here.',
                     muted: true,
                     onTaskTap: (task) => showTaskDetailSheet(context, task.id),
-                    onToggleTask: (task) {
-                      ref.read(taskRepositoryProvider).reopenTask(task.id);
+                    onToggleTask: (task) async {
+                      final repository = ref.read(taskRepositoryProvider);
+                      await repository.reopenTask(task.id);
+                      if (context.mounted) {
+                        _showUndoSnackBar(
+                          context,
+                          'Task reopened.',
+                          () => repository.completeTask(task.id),
+                        );
+                      }
                     },
                   ),
                   loading: () => const _LoadingCard(title: 'Completed'),
@@ -99,6 +123,24 @@ class TodayScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+void _showUndoSnackBar(
+  BuildContext context,
+  String message,
+  Future<void> Function() undo,
+) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () {
+          undo();
+        },
+      ),
+    ),
+  );
 }
 
 class _LoadingCard extends StatelessWidget {

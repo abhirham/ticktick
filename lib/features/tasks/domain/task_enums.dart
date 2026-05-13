@@ -43,3 +43,32 @@ extension TaskPriorityLabel on TaskPriority {
     };
   }
 }
+
+enum TaskRepeatFrequency {
+  daily('daily'),
+  weekly('weekly'),
+  monthly('monthly'),
+  yearly('yearly');
+
+  const TaskRepeatFrequency(this.value);
+
+  final String value;
+
+  static TaskRepeatFrequency fromValue(String value) {
+    return TaskRepeatFrequency.values.firstWhere(
+      (frequency) => frequency.value == value,
+      orElse: () => TaskRepeatFrequency.daily,
+    );
+  }
+}
+
+extension TaskRepeatFrequencyLabel on TaskRepeatFrequency {
+  String get label {
+    return switch (this) {
+      TaskRepeatFrequency.daily => 'Daily',
+      TaskRepeatFrequency.weekly => 'Weekly',
+      TaskRepeatFrequency.monthly => 'Monthly',
+      TaskRepeatFrequency.yearly => 'Yearly',
+    };
+  }
+}

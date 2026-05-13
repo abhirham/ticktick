@@ -15,6 +15,8 @@ class TaskDraft {
     this.isAllDay = true,
     this.isPersistent = false,
     this.showInTodayUntilComplete = false,
+    this.reminders = const [],
+    this.repeatRule,
     this.originalInput,
     this.sortOrder = 0,
   });
@@ -32,6 +34,42 @@ class TaskDraft {
   final bool isAllDay;
   final bool isPersistent;
   final bool showInTodayUntilComplete;
+  final List<TaskReminderDraft> reminders;
+  final TaskRepeatDraft? repeatRule;
   final String? originalInput;
   final int sortOrder;
+}
+
+class TaskReminderDraft {
+  const TaskReminderDraft({
+    required this.remindAt,
+    this.reminderType = 'absolute',
+    this.offsetMinutes,
+    this.isEnabled = true,
+  });
+
+  final DateTime remindAt;
+  final String reminderType;
+  final int? offsetMinutes;
+  final bool isEnabled;
+}
+
+class TaskRepeatDraft {
+  const TaskRepeatDraft({
+    required this.frequency,
+    this.interval = 1,
+    this.weekdays,
+    this.monthDay,
+    this.endType = 'never',
+    this.endDate,
+    this.occurrenceCount,
+  });
+
+  final TaskRepeatFrequency frequency;
+  final int interval;
+  final String? weekdays;
+  final int? monthDay;
+  final String endType;
+  final DateTime? endDate;
+  final int? occurrenceCount;
 }

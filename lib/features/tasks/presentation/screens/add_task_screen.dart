@@ -117,7 +117,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
                           ),
                           _ChipButton(
                             icon: Icons.push_pin_outlined,
-                            label: _isPersistent ? 'Stays Today' : 'Normal',
+                            label: _isPersistent ? 'Keep in Today' : 'Normal',
                             active: _isPersistent,
                             onPressed: () {
                               setState(() => _isPersistent = !_isPersistent);
@@ -191,6 +191,7 @@ class _AddTaskScreenState extends ConsumerState<AddTaskScreen> {
             priority: _priority,
             isPersistent: _isPersistent,
             showInTodayUntilComplete: _isPersistent,
+            originalInput: title,
           ),
         );
     if (mounted) {

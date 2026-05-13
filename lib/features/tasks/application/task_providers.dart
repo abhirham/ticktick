@@ -61,6 +61,30 @@ final taskListsProvider = StreamProvider<List<TaskList>>((ref) {
   return ref.watch(taskRepositoryProvider).watchLists();
 });
 
+final taskGroupsForListProvider =
+    StreamProvider.family<List<ListGroup>, String>((ref, listId) {
+      if (flowTaskVisualFixtureEnabled) {
+        return Stream.value(const <ListGroup>[]);
+      }
+      return ref.watch(taskRepositoryProvider).watchGroupsForList(listId);
+    });
+
+final taskRemindersProvider =
+    StreamProvider.family<List<ReminderEntry>, String>((ref, taskId) {
+      if (flowTaskVisualFixtureEnabled) {
+        return Stream.value(const <ReminderEntry>[]);
+      }
+      return ref.watch(taskRepositoryProvider).watchRemindersForTask(taskId);
+    });
+
+final taskRepeatRuleProvider =
+    StreamProvider.family<RecurrenceRuleEntry?, String>((ref, ruleId) {
+      if (flowTaskVisualFixtureEnabled) {
+        return Stream.value(null);
+      }
+      return ref.watch(taskRepositoryProvider).watchRecurrenceRule(ruleId);
+    });
+
 final openTaskCountProvider = StreamProvider<int>((ref) {
   if (flowTaskVisualFixtureEnabled) {
     final today = ref.watch(todayDateProvider);

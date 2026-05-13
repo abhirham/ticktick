@@ -17,8 +17,16 @@ class AllTasksScreen extends ConsumerWidget {
       title: 'All Tasks',
       tasks: ref.watch(allOpenTasksProvider),
       emptyText: 'Open tasks will appear here.',
-      onToggleTask: (task) {
-        ref.read(taskRepositoryProvider).completeTask(task.id);
+      onToggleTask: (context, task) async {
+        final repository = ref.read(taskRepositoryProvider);
+        await repository.completeTask(task.id);
+        if (context.mounted) {
+          _showUndoSnackBar(
+            context,
+            'Task completed.',
+            () => repository.reopenTask(task.id),
+          );
+        }
       },
     );
   }
@@ -34,8 +42,16 @@ class CompletedScreen extends ConsumerWidget {
       tasks: ref.watch(completedTasksProvider),
       emptyText: 'Completed tasks will appear here.',
       muted: true,
-      onToggleTask: (task) {
-        ref.read(taskRepositoryProvider).reopenTask(task.id);
+      onToggleTask: (context, task) async {
+        final repository = ref.read(taskRepositoryProvider);
+        await repository.reopenTask(task.id);
+        if (context.mounted) {
+          _showUndoSnackBar(
+            context,
+            'Task reopened.',
+            () => repository.completeTask(task.id),
+          );
+        }
       },
     );
   }
@@ -51,8 +67,16 @@ class TrashScreen extends ConsumerWidget {
       tasks: ref.watch(trashTasksProvider),
       emptyText: 'Deleted tasks will appear here.',
       muted: true,
-      onToggleTask: (task) {
-        ref.read(taskRepositoryProvider).restoreTask(task.id);
+      onToggleTask: (context, task) async {
+        final repository = ref.read(taskRepositoryProvider);
+        await repository.restoreTask(task.id);
+        if (context.mounted) {
+          _showUndoSnackBar(
+            context,
+            'Task restored.',
+            () => repository.moveTaskToTrash(task.id),
+          );
+        }
       },
     );
   }
@@ -70,7 +94,7 @@ class _TaskCollectionScreen extends StatelessWidget {
   final String title;
   final AsyncValue<List<TaskItem>> tasks;
   final String emptyText;
-  final ValueChanged<TaskItem> onToggleTask;
+  final Future<void> Function(BuildContext context, TaskItem task) onToggleTask;
   final bool muted;
 
   @override
@@ -99,7 +123,7 @@ class _TaskCollectionScreen extends StatelessWidget {
                     emptyText: emptyText,
                     muted: muted,
                     onTaskTap: (task) => context.go('/task/${task.id}'),
-                    onToggleTask: onToggleTask,
+                    onToggleTask: (task) => onToggleTask(context, task),
                   ),
                   loading: () => TaskSectionCard(
                     title: title,
@@ -123,4 +147,22 @@ class _TaskCollectionScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showUndoSnackBar(
+  BuildContext context,
+  String message,
+  Future<void> Function() undo,
+) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(message),
+      action: SnackBarAction(
+        label: 'Undo',
+        onPressed: () {
+          undo();
+        },
+      ),
+    ),
+  );
 }

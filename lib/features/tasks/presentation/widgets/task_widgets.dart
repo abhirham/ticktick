@@ -244,6 +244,7 @@ class TaskRow extends StatelessWidget {
     final colors = context.colors;
     final isCompleted =
         TaskStatus.fromValue(task.status) == TaskStatus.completed;
+    final isPersistent = task.isPersistent && task.showInTodayUntilComplete;
     final metadata = _metadataLabel(task, DateTime.now());
 
     return Semantics(
@@ -263,18 +264,28 @@ class TaskRow extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  task.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: muted || isCompleted
-                        ? colors.textSubtle
-                        : colors.text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w400,
-                    height: 1.28,
-                  ),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        task.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: muted || isCompleted
+                              ? colors.textSubtle
+                              : colors.text,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w400,
+                          height: 1.28,
+                        ),
+                      ),
+                    ),
+                    if (isPersistent) ...[
+                      const SizedBox(width: 6),
+                      _PersistentBadge(muted: muted || isCompleted),
+                    ],
+                  ],
                 ),
               ),
               if (metadata != null) ...[
@@ -335,6 +346,16 @@ class TaskRow extends StatelessWidget {
         (colors) => colors.primary,
       );
     }
+    if (task.isPersistent &&
+        task.showInTodayUntilComplete &&
+        task.dueDate == null) {
+      final count = task.todayCarryForwardCount;
+      return _TaskMetadata(count > 0 ? 'Carried ${count}d' : 'Persistent', (
+        colors,
+      ) {
+        return colors.primary;
+      });
+    }
     if (task.dueDate == null) {
       return null;
     }
@@ -378,6 +399,31 @@ class TaskCheckBox extends StatelessWidget {
         child: checked
             ? Icon(Icons.check_rounded, size: 13, color: colors.surface)
             : null,
+      ),
+    );
+  }
+}
+
+class _PersistentBadge extends StatelessWidget {
+  const _PersistentBadge({required this.muted});
+
+  final bool muted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return Container(
+      width: 19,
+      height: 19,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: muted ? colors.surfaceRaised : colors.surfaceSelected,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Icon(
+        Icons.push_pin_outlined,
+        color: muted ? colors.textSubtle : colors.primary,
+        size: 12,
       ),
     );
   }

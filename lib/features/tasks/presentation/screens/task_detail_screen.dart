@@ -5,10 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/providers.dart';
 import '../../../../app/theme.dart';
 import '../../../../core/time/flow_date_utils.dart';
+import '../../../../data/local/app_database.dart';
 import '../../../../shared/presentation/flow_action_button.dart';
 import '../../../../shared/presentation/flow_bottom_sheet.dart';
 import '../../../../shared/presentation/flow_date_picker.dart';
 import '../../application/task_providers.dart';
+import '../../domain/task_draft.dart';
 import '../../domain/task_enums.dart';
 import '../widgets/priority_sheet.dart';
 import '../widgets/task_widgets.dart';
@@ -26,10 +28,17 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   String? _seededTaskId;
+  String _listId = AppDatabase.inboxListId;
+  String? _groupId;
   DateTime? _dueDate;
   String? _dueTime;
   bool _isAllDay = true;
+  bool _keepInToday = false;
   TaskPriority _priority = TaskPriority.none;
+  bool _remindersChanged = false;
+  List<TaskReminderDraft> _reminders = const [];
+  bool _repeatChanged = false;
+  TaskRepeatDraft? _repeatRule;
 
   @override
   void dispose() {
@@ -56,13 +65,40 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             _seededTaskId = task.id;
             _titleController.text = task.title;
             _descriptionController.text = task.description ?? '';
+            _listId = task.listId;
+            _groupId = task.groupId;
             _dueDate = task.dueDate;
             _dueTime = task.dueTime;
             _isAllDay = task.isAllDay;
+            _keepInToday = task.showInTodayUntilComplete;
             _priority = TaskPriority.fromValue(task.priority);
+            _remindersChanged = false;
+            _reminders = const [];
+            _repeatChanged = false;
+            _repeatRule = null;
           }
 
           final status = TaskStatus.fromValue(task.status);
+          final lists = ref.watch(taskListsProvider).valueOrNull ?? const [];
+          final groups =
+              ref.watch(taskGroupsForListProvider(_listId)).valueOrNull ??
+              const <ListGroup>[];
+          final reminderEntries =
+              ref.watch(taskRemindersProvider(task.id)).valueOrNull ??
+              const <ReminderEntry>[];
+          final repeatEntry = task.recurrenceRuleId == null
+              ? null
+              : ref
+                    .watch(taskRepeatRuleProvider(task.recurrenceRuleId!))
+                    .valueOrNull;
+          final listName = _listName(lists, _listId);
+          final groupName = _groupName(groups, _groupId);
+          final reminderLabel = _remindersChanged
+              ? _reminderDraftLabel(_reminders)
+              : _reminderEntryLabel(reminderEntries);
+          final repeatLabel = _repeatChanged
+              ? _repeatDraftLabel(_repeatRule)
+              : _repeatEntryLabel(repeatEntry, task.recurrenceRuleId);
           return Column(
             children: [
               FlowTaskPageHeader(
@@ -94,12 +130,31 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: Text(
-                                  'Inbox',
-                                  style: TextStyle(
-                                    color: colors.textMuted,
-                                    fontSize: 16.5,
-                                    fontWeight: FontWeight.w700,
+                                child: InkWell(
+                                  onTap: () => _pickList(lists),
+                                  borderRadius: BorderRadius.circular(999),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(
+                                          listName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: colors.textMuted,
+                                            fontSize: 16.5,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Icon(
+                                        Icons.unfold_more_rounded,
+                                        color: colors.iconMuted,
+                                        size: 18,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -110,7 +165,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                                         _dueDate!,
                                         DateTime.now(),
                                       ),
-                                onTap: _pickDate,
+                                onTap: _showDateMenu,
                               ),
                             ],
                           ),
@@ -166,10 +221,45 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                                     ? 'All day'
                                     : _dueTime ?? 'Time',
                                 active: !_isAllDay,
-                                onPressed: _toggleTime,
+                                onPressed: _showTimeMenu,
                               ),
-                              if (task.isPersistent)
-                                const _PersistentHelperText(),
+                              _DetailActionChip(
+                                icon: Icons.inbox_outlined,
+                                label: listName,
+                                active: _listId != AppDatabase.inboxListId,
+                                onPressed: () => _pickList(lists),
+                              ),
+                              _DetailActionChip(
+                                icon: Icons.account_tree_outlined,
+                                label: groupName,
+                                active: _groupId != null,
+                                onPressed: () => _pickGroup(groups),
+                              ),
+                              _DetailActionChip(
+                                icon: Icons.notifications_none_rounded,
+                                label: reminderLabel,
+                                active: reminderLabel != 'No reminder',
+                                onPressed: _showReminderMenu,
+                              ),
+                              _DetailActionChip(
+                                icon: Icons.repeat_rounded,
+                                label: repeatLabel,
+                                active: repeatLabel != 'No repeat',
+                                onPressed: _showRepeatMenu,
+                              ),
+                              _DetailActionChip(
+                                icon: Icons.push_pin_outlined,
+                                label: _keepInToday
+                                    ? 'Keep in Today'
+                                    : 'Normal',
+                                active: _keepInToday,
+                                onPressed: () {
+                                  setState(() {
+                                    _keepInToday = !_keepInToday;
+                                  });
+                                },
+                              ),
+                              if (_keepInToday) const _PersistentHelperText(),
                             ],
                           ),
                         ],
@@ -191,7 +281,15 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                           await ref
                               .read(taskRepositoryProvider)
                               .restoreTask(task.id);
-                          if (context.mounted) context.go('/trash');
+                          if (context.mounted) {
+                            context.go('/trash');
+                            _showUndoSnackBar(
+                              'Task restored.',
+                              () => ref
+                                  .read(taskRepositoryProvider)
+                                  .moveTaskToTrash(task.id),
+                            );
+                          }
                         },
                       ),
                       const SizedBox(height: 10),
@@ -220,7 +318,15 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                           await ref
                               .read(taskRepositoryProvider)
                               .moveTaskToTrash(task.id);
-                          if (context.mounted) context.go('/trash');
+                          if (context.mounted) {
+                            context.go('/trash');
+                            _showUndoSnackBar(
+                              'Task moved to Trash.',
+                              () => ref
+                                  .read(taskRepositoryProvider)
+                                  .restoreTask(task.id),
+                            );
+                          }
                         },
                       ),
                     ],
@@ -232,6 +338,35 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _showDateMenu() async {
+    final choice = await showFlowBottomSheet<_DateChoice>(
+      context: context,
+      builder: (context) => const _DateChoiceSheet(),
+    );
+    if (choice == null) {
+      return;
+    }
+
+    final now = DateTime.now();
+    if (choice == _DateChoice.none) {
+      setState(() {
+        _dueDate = null;
+        _dueTime = null;
+        _isAllDay = true;
+      });
+      return;
+    }
+    if (choice == _DateChoice.today) {
+      setState(() => _dueDate = dateOnly(now));
+      return;
+    }
+    if (choice == _DateChoice.tomorrow) {
+      setState(() => _dueDate = tomorrowOf(now));
+      return;
+    }
+    await _pickDate();
   }
 
   Future<void> _pickDate() async {
@@ -257,15 +392,93 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     }
   }
 
-  void _toggleTime() {
+  Future<void> _showTimeMenu() async {
+    final selected = await showFlowBottomSheet<String>(
+      context: context,
+      builder: (context) => const _TimeChoiceSheet(),
+    );
+    if (!mounted || selected == null) {
+      return;
+    }
     setState(() {
-      if (_isAllDay) {
-        _isAllDay = false;
-        _dueTime = '09:00';
-      } else {
+      if (selected.isEmpty) {
         _isAllDay = true;
         _dueTime = null;
+      } else {
+        _isAllDay = false;
+        _dueTime = selected;
+        _dueDate ??= dateOnly(DateTime.now());
       }
+    });
+  }
+
+  Future<void> _pickList(List<TaskList> lists) async {
+    final selected = await showFlowBottomSheet<String>(
+      context: context,
+      builder: (context) => _ListChoiceSheet(
+        lists: lists.isEmpty
+            ? [
+                TaskList(
+                  id: AppDatabase.inboxListId,
+                  name: 'Inbox',
+                  color: '#4774FA',
+                  sortOrder: 0,
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  isArchived: false,
+                  isSystemList: true,
+                ),
+              ]
+            : lists,
+        selectedId: _listId,
+      ),
+    );
+    if (selected == null || selected == _listId) {
+      return;
+    }
+    setState(() {
+      _listId = selected;
+      _groupId = null;
+    });
+  }
+
+  Future<void> _pickGroup(List<ListGroup> groups) async {
+    final selected = await showFlowBottomSheet<String>(
+      context: context,
+      builder: (context) =>
+          _GroupChoiceSheet(groups: groups, selectedId: _groupId),
+    );
+    if (!mounted || selected == null) {
+      return;
+    }
+    setState(() => _groupId = selected.isEmpty ? null : selected);
+  }
+
+  Future<void> _showReminderMenu() async {
+    final choice = await showFlowBottomSheet<_ReminderChoice>(
+      context: context,
+      builder: (context) => const _ReminderChoiceSheet(),
+    );
+    if (choice == null) {
+      return;
+    }
+    setState(() {
+      _remindersChanged = true;
+      _reminders = _remindersForChoice(choice);
+    });
+  }
+
+  Future<void> _showRepeatMenu() async {
+    final choice = await showFlowBottomSheet<_RepeatChoice>(
+      context: context,
+      builder: (context) => const _RepeatChoiceSheet(),
+    );
+    if (choice == null) {
+      return;
+    }
+    setState(() {
+      _repeatChanged = true;
+      _repeatRule = _repeatForChoice(choice);
     });
   }
 
@@ -284,11 +497,24 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
           title: title,
           description: _descriptionController.text,
           priority: _priority,
+          listId: _listId,
+          updateGroup: true,
+          groupId: _groupId,
           dueDate: _dueDate,
           dueTime: _dueTime,
           isAllDay: _isAllDay,
+          isPersistent: _keepInToday,
+          showInTodayUntilComplete: _keepInToday,
+          updateReminders: _remindersChanged,
+          reminders: _reminders,
+          updateRepeatRule: _repeatChanged,
+          repeatRule: _repeatRule,
         );
     if (mounted) {
+      setState(() {
+        _remindersChanged = false;
+        _repeatChanged = false;
+      });
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Task saved.')));
@@ -299,8 +525,20 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     final repository = ref.read(taskRepositoryProvider);
     if (status == TaskStatus.completed) {
       await repository.reopenTask(widget.taskId);
+      if (mounted) {
+        _showUndoSnackBar(
+          'Task reopened.',
+          () => repository.completeTask(widget.taskId),
+        );
+      }
     } else {
       await repository.completeTask(widget.taskId);
+      if (mounted) {
+        _showUndoSnackBar(
+          'Task completed.',
+          () => repository.reopenTask(widget.taskId),
+        );
+      }
     }
   }
 
@@ -315,6 +553,450 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         context.go('/trash');
       }
     }
+  }
+
+  void _showUndoSnackBar(String message, Future<void> Function() undo) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            undo();
+          },
+        ),
+      ),
+    );
+  }
+
+  List<TaskReminderDraft> _remindersForChoice(_ReminderChoice choice) {
+    if (choice == _ReminderChoice.none) {
+      return const [];
+    }
+
+    final date = _dueDate ?? dateOnly(DateTime.now());
+    final dueAt = _combineDateAndTime(date, _dueTime ?? '09:00');
+    return switch (choice) {
+      _ReminderChoice.none => const [],
+      _ReminderChoice.morning => [
+        TaskReminderDraft(
+          reminderType: 'due_date_morning',
+          remindAt: _combineDateAndTime(date, '09:00'),
+        ),
+      ],
+      _ReminderChoice.atDueTime => [
+        TaskReminderDraft(
+          reminderType: 'relative',
+          remindAt: dueAt,
+          offsetMinutes: 0,
+        ),
+      ],
+      _ReminderChoice.tenMinutesBefore => [
+        TaskReminderDraft(
+          reminderType: 'relative',
+          remindAt: dueAt.subtract(const Duration(minutes: 10)),
+          offsetMinutes: -10,
+        ),
+      ],
+      _ReminderChoice.oneHourBefore => [
+        TaskReminderDraft(
+          reminderType: 'relative',
+          remindAt: dueAt.subtract(const Duration(hours: 1)),
+          offsetMinutes: -60,
+        ),
+      ],
+    };
+  }
+
+  TaskRepeatDraft? _repeatForChoice(_RepeatChoice choice) {
+    return switch (choice) {
+      _RepeatChoice.none => null,
+      _RepeatChoice.daily => const TaskRepeatDraft(
+        frequency: TaskRepeatFrequency.daily,
+      ),
+      _RepeatChoice.weekdays => const TaskRepeatDraft(
+        frequency: TaskRepeatFrequency.weekly,
+        weekdays: '1,2,3,4,5',
+      ),
+      _RepeatChoice.weekly => const TaskRepeatDraft(
+        frequency: TaskRepeatFrequency.weekly,
+      ),
+      _RepeatChoice.monthly => TaskRepeatDraft(
+        frequency: TaskRepeatFrequency.monthly,
+        monthDay: (_dueDate ?? DateTime.now()).day,
+      ),
+    };
+  }
+}
+
+enum _DateChoice { none, today, tomorrow, pick }
+
+enum _ReminderChoice {
+  none,
+  morning,
+  atDueTime,
+  tenMinutesBefore,
+  oneHourBefore,
+}
+
+enum _RepeatChoice { none, daily, weekdays, weekly, monthly }
+
+String _listName(List<TaskList> lists, String selectedId) {
+  for (final list in lists) {
+    if (list.id == selectedId) {
+      return list.name;
+    }
+  }
+  return selectedId == AppDatabase.inboxListId ? 'Inbox' : 'List';
+}
+
+String _groupName(List<ListGroup> groups, String? selectedId) {
+  if (selectedId == null) {
+    return 'No group';
+  }
+  for (final group in groups) {
+    if (group.id == selectedId) {
+      return group.name;
+    }
+  }
+  return 'Group';
+}
+
+String _reminderDraftLabel(List<TaskReminderDraft> reminders) {
+  if (reminders.isEmpty) {
+    return 'No reminder';
+  }
+  return _reminderLabel(
+    reminders.first.remindAt,
+    offsetMinutes: reminders.first.offsetMinutes,
+  );
+}
+
+String _reminderEntryLabel(List<ReminderEntry> reminders) {
+  if (reminders.isEmpty) {
+    return 'No reminder';
+  }
+  return _reminderLabel(
+    reminders.first.remindAt,
+    offsetMinutes: reminders.first.offsetMinutes,
+  );
+}
+
+String _reminderLabel(DateTime remindAt, {int? offsetMinutes}) {
+  if (offsetMinutes == -10) {
+    return '10 min before';
+  }
+  if (offsetMinutes == -60) {
+    return '1 hour before';
+  }
+  if (offsetMinutes == 0) {
+    return 'At due time';
+  }
+  final hour = remindAt.hour.toString().padLeft(2, '0');
+  final minute = remindAt.minute.toString().padLeft(2, '0');
+  return '${compactDateLabel(remindAt, DateTime.now())} ${timeLabel('$hour:$minute')}';
+}
+
+String _repeatDraftLabel(TaskRepeatDraft? draft) {
+  if (draft == null) {
+    return 'No repeat';
+  }
+  if (draft.frequency == TaskRepeatFrequency.weekly &&
+      draft.weekdays == '1,2,3,4,5') {
+    return 'Weekdays';
+  }
+  return draft.frequency.label;
+}
+
+String _repeatEntryLabel(RecurrenceRuleEntry? entry, String? ruleId) {
+  if (ruleId == null) {
+    return 'No repeat';
+  }
+  if (entry == null) {
+    return 'Repeats';
+  }
+  if (entry.repeatFrequency == TaskRepeatFrequency.weekly.value &&
+      entry.repeatWeekdays == '1,2,3,4,5') {
+    return 'Weekdays';
+  }
+  return TaskRepeatFrequency.fromValue(entry.repeatFrequency).label;
+}
+
+DateTime _combineDateAndTime(DateTime date, String time) {
+  final parts = time.split(':');
+  final hour = parts.isEmpty ? 9 : int.tryParse(parts[0]) ?? 9;
+  final minute = parts.length < 2 ? 0 : int.tryParse(parts[1]) ?? 0;
+  return DateTime(date.year, date.month, date.day, hour, minute);
+}
+
+class _DateChoiceSheet extends StatelessWidget {
+  const _DateChoiceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChoiceSheet(
+      title: 'Due date',
+      children: [
+        _ChoiceRow(
+          icon: Icons.event_busy_rounded,
+          label: 'No date',
+          onTap: () => Navigator.of(context).pop(_DateChoice.none),
+        ),
+        _ChoiceRow(
+          icon: Icons.today_rounded,
+          label: 'Today',
+          onTap: () => Navigator.of(context).pop(_DateChoice.today),
+        ),
+        _ChoiceRow(
+          icon: Icons.event_rounded,
+          label: 'Tomorrow',
+          onTap: () => Navigator.of(context).pop(_DateChoice.tomorrow),
+        ),
+        _ChoiceRow(
+          icon: Icons.calendar_month_outlined,
+          label: 'Pick date',
+          onTap: () => Navigator.of(context).pop(_DateChoice.pick),
+        ),
+      ],
+    );
+  }
+}
+
+class _TimeChoiceSheet extends StatelessWidget {
+  const _TimeChoiceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChoiceSheet(
+      title: 'Due time',
+      children: [
+        _ChoiceRow(
+          icon: Icons.access_time_filled_rounded,
+          label: 'All day',
+          onTap: () => Navigator.of(context).pop(''),
+        ),
+        for (final entry in const [
+          ('09:00', '9:00 a.m.'),
+          ('12:00', '12:00 p.m.'),
+          ('17:00', '5:00 p.m.'),
+          ('20:00', '8:00 p.m.'),
+        ])
+          _ChoiceRow(
+            icon: Icons.access_time_rounded,
+            label: entry.$2,
+            onTap: () => Navigator.of(context).pop(entry.$1),
+          ),
+      ],
+    );
+  }
+}
+
+class _ListChoiceSheet extends StatelessWidget {
+  const _ListChoiceSheet({required this.lists, required this.selectedId});
+
+  final List<TaskList> lists;
+  final String selectedId;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChoiceSheet(
+      title: 'List',
+      children: [
+        for (final list in lists)
+          _ChoiceRow(
+            icon: Icons.inbox_outlined,
+            label: list.name,
+            selected: list.id == selectedId,
+            onTap: () => Navigator.of(context).pop(list.id),
+          ),
+      ],
+    );
+  }
+}
+
+class _GroupChoiceSheet extends StatelessWidget {
+  const _GroupChoiceSheet({required this.groups, required this.selectedId});
+
+  final List<ListGroup> groups;
+  final String? selectedId;
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChoiceSheet(
+      title: 'Group',
+      children: [
+        _ChoiceRow(
+          icon: Icons.layers_clear_rounded,
+          label: 'No group',
+          selected: selectedId == null,
+          onTap: () => Navigator.of(context).pop(''),
+        ),
+        for (final group in groups)
+          _ChoiceRow(
+            icon: Icons.account_tree_outlined,
+            label: group.name,
+            selected: group.id == selectedId,
+            onTap: () => Navigator.of(context).pop(group.id),
+          ),
+      ],
+    );
+  }
+}
+
+class _ReminderChoiceSheet extends StatelessWidget {
+  const _ReminderChoiceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChoiceSheet(
+      title: 'Reminder',
+      children: [
+        _ChoiceRow(
+          icon: Icons.notifications_off_outlined,
+          label: 'No reminder',
+          onTap: () => Navigator.of(context).pop(_ReminderChoice.none),
+        ),
+        _ChoiceRow(
+          icon: Icons.wb_sunny_outlined,
+          label: 'Due date morning',
+          onTap: () => Navigator.of(context).pop(_ReminderChoice.morning),
+        ),
+        _ChoiceRow(
+          icon: Icons.notifications_none_rounded,
+          label: 'At due time',
+          onTap: () => Navigator.of(context).pop(_ReminderChoice.atDueTime),
+        ),
+        _ChoiceRow(
+          icon: Icons.timer_outlined,
+          label: '10 min before',
+          onTap: () =>
+              Navigator.of(context).pop(_ReminderChoice.tenMinutesBefore),
+        ),
+        _ChoiceRow(
+          icon: Icons.timer_outlined,
+          label: '1 hour before',
+          onTap: () => Navigator.of(context).pop(_ReminderChoice.oneHourBefore),
+        ),
+      ],
+    );
+  }
+}
+
+class _RepeatChoiceSheet extends StatelessWidget {
+  const _RepeatChoiceSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return _ChoiceSheet(
+      title: 'Repeat',
+      children: [
+        _ChoiceRow(
+          icon: Icons.repeat_on_rounded,
+          label: 'No repeat',
+          onTap: () => Navigator.of(context).pop(_RepeatChoice.none),
+        ),
+        _ChoiceRow(
+          icon: Icons.repeat_rounded,
+          label: 'Daily',
+          onTap: () => Navigator.of(context).pop(_RepeatChoice.daily),
+        ),
+        _ChoiceRow(
+          icon: Icons.work_history_outlined,
+          label: 'Weekdays',
+          onTap: () => Navigator.of(context).pop(_RepeatChoice.weekdays),
+        ),
+        _ChoiceRow(
+          icon: Icons.calendar_view_week_outlined,
+          label: 'Weekly',
+          onTap: () => Navigator.of(context).pop(_RepeatChoice.weekly),
+        ),
+        _ChoiceRow(
+          icon: Icons.calendar_month_outlined,
+          label: 'Monthly',
+          onTap: () => Navigator.of(context).pop(_RepeatChoice.monthly),
+        ),
+      ],
+    );
+  }
+}
+
+class _ChoiceSheet extends StatelessWidget {
+  const _ChoiceSheet({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    return FlowBottomSheetSurface(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 22),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              color: colors.textStrong,
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+class _ChoiceRow extends StatelessWidget {
+  const _ChoiceRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.colors;
+    final foreground = selected ? colors.primary : colors.text;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        height: 44,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: Row(
+          children: [
+            Icon(icon, color: foreground, size: 22),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: foreground,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_rounded, color: colors.primary, size: 20),
+          ],
+        ),
+      ),
+    );
   }
 }
 
