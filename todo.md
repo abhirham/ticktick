@@ -31,10 +31,10 @@
 ## Natural Language Entry
 
 - [x] Expand parser coverage for all examples in `docs/NATURAL_LANGUAGE_SPEC.md`.
-- [ ] [in progress: codex/nl-worker] Add editable parsed chips for date, time, repeat, reminder, priority, list, group, and persistent.
-- [ ] [in progress: codex/nl-worker] Support removing parsed chips before saving.
-- [ ] [in progress: codex/nl-worker] Add list/group confirmation or warning behavior when parsed list/group does not exist.
-- [ ] [in progress: codex/nl-worker] Finish Natural Language Debug Screen output for raw input, cleaned title, parsed metadata, and warnings.
+- [x] Add editable parsed chips for date, time, repeat, reminder, priority, list, group, and persistent.
+- [x] Support removing parsed chips before saving.
+- [x] Add list/group confirmation or warning behavior when parsed list/group does not exist.
+- [x] Finish Natural Language Debug Screen output for raw input, cleaned title, parsed metadata, and warnings.
 - [x] Add parser tests for ambiguous dates, missing years, time without date, list/group syntax, reminders, recurrence, and persistent phrases.
 
 ## Persistent Tasks

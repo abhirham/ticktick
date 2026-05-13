@@ -554,6 +554,10 @@ class ParsedTaskInput {
   final List<ParserResultWarning> warnings;
 
   TaskDraft toDraft({String? listId, String? groupId}) {
+    final reminderDraft = reminder?.toTaskReminderDraft(
+      dueDate: dueDate,
+      dueTime: dueTime,
+    );
     return TaskDraft(
       title: title,
       priority: priority,
@@ -567,6 +571,8 @@ class ParsedTaskInput {
       isAllDay: dueTime == null,
       isPersistent: isPersistent,
       showInTodayUntilComplete: isPersistent,
+      reminders: reminderDraft == null ? const [] : [reminderDraft],
+      repeatRule: recurrence?.toTaskRepeatDraft(dueDate: dueDate),
       originalInput: originalInput,
     );
   }
@@ -582,6 +588,20 @@ class ParsedRecurrence {
   final RecurrenceFrequency frequency;
   final int interval;
   final List<int> weekdays;
+
+  TaskRepeatDraft toTaskRepeatDraft({DateTime? dueDate}) {
+    return TaskRepeatDraft(
+      frequency: switch (frequency) {
+        RecurrenceFrequency.daily => TaskRepeatFrequency.daily,
+        RecurrenceFrequency.weekly => TaskRepeatFrequency.weekly,
+        RecurrenceFrequency.monthly => TaskRepeatFrequency.monthly,
+        RecurrenceFrequency.yearly => TaskRepeatFrequency.yearly,
+      },
+      interval: interval,
+      weekdays: weekdays.isEmpty ? null : weekdays.join(','),
+      monthDay: frequency == RecurrenceFrequency.monthly ? dueDate?.day : null,
+    );
+  }
 }
 
 class ParsedReminder {
@@ -590,6 +610,43 @@ class ParsedReminder {
   final ReminderKind kind;
   final DateTime? remindAt;
   final int? offsetMinutes;
+
+  TaskReminderDraft? toTaskReminderDraft({DateTime? dueDate, String? dueTime}) {
+    return switch (kind) {
+      ReminderKind.absolute =>
+        remindAt == null
+            ? null
+            : TaskReminderDraft(reminderType: 'absolute', remindAt: remindAt!),
+      ReminderKind.relative => _relativeDraft(
+        dueDate: dueDate,
+        dueTime: dueTime,
+      ),
+    };
+  }
+
+  TaskReminderDraft? _relativeDraft({DateTime? dueDate, String? dueTime}) {
+    final minutesBefore = offsetMinutes;
+    if (dueDate == null || minutesBefore == null) {
+      return null;
+    }
+    final dueAt = _combineDateAndTime(dueDate, dueTime ?? '09:00');
+    return TaskReminderDraft(
+      reminderType: 'relative',
+      remindAt: dueAt.subtract(Duration(minutes: minutesBefore)),
+      offsetMinutes: -minutesBefore,
+    );
+  }
+
+  static DateTime _combineDateAndTime(DateTime date, String time) {
+    final parts = time.split(':');
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+    );
+  }
 }
 
 class ParserResultWarning {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/theme.dart';
 import '../../../data/local/app_database.dart';
@@ -347,6 +348,22 @@ class SettingsScreen extends ConsumerWidget {
                         selectedValue: settings.repeatingOverdueBehavior,
                         options: SettingsOptions.repeatingOverdueBehaviors,
                       ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _SettingsPanel(
+                  title: 'Developer',
+                  children: [
+                    _SettingsOptionRow(
+                      key: const ValueKey(
+                        'settings_option_naturalLanguageDebug',
+                      ),
+                      icon: Icons.bug_report_outlined,
+                      iconColor: colors.primaryBright,
+                      title: 'Natural language debug',
+                      value: 'Parser output',
+                      onTap: () => context.go('/natural-language-debug'),
                     ),
                   ],
                 ),
