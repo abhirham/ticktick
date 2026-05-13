@@ -18,6 +18,9 @@ FlowTask reminders use `flutter_local_notifications` and `timezone` for timezone
 - Reschedule when task date/time changes.
 - Reschedule for the next recurrence occurrence.
 - Snoozing creates a temporary reminder and does not alter the due date.
+- Notification scheduling is integrated with the reminder service, so reminder
+  create/update/delete flows are responsible for keeping local notifications in
+  sync with stored reminder records.
 
 ## Notification Actions
 
@@ -28,6 +31,7 @@ FlowTask reminders use `flutter_local_notifications` and `timezone` for timezone
 - Snooze 1 hour
 - Open task
 
-## Phase 1 Status
+## Implementation Status
 
-The schema includes reminders. Scheduling, permissions, and snooze are scheduled for Phase 6.
+The schema, reminder service integration, notification scheduling, permissions,
+snooze, cancellation, and recurrence rescheduling behavior are implemented.

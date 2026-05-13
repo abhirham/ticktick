@@ -29,8 +29,16 @@ FlowTask is a focused offline-first task manager for Android and iOS. It keeps t
 - Natural Language Debug
 - Widget Settings
 
-## Phase 1 Scope
+## Deep Links
 
-The first implementation checkpoint provides the Flutter scaffold, clean architecture folders, Drift database, routing, theme, basic task CRUD, Inbox, Today, All Tasks, Completed, and Trash.
+- `flowtask://today`
+- `flowtask://add`
+- `flowtask://calendar`
+- `flowtask://task/{id}`
 
-Later phases add list grouping, natural-language chips, persistent task refinements, recurrence generation, reminders, full calendar controls, and native widgets.
+## Implementation Status
+
+FlowTask includes the Flutter scaffold, clean architecture folders, Drift
+database, routing, theme, task CRUD, lists/groups, natural-language chips,
+persistent task behavior, recurrence generation, reminders and notifications,
+calendar controls, native widgets, and deep links.

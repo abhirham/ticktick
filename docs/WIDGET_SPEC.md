@@ -31,15 +31,39 @@ Flutter writes a small widget-safe snapshot:
 - `generatedAt`
 - `timeZone`
 - `nextDueTodayTasks`
+- `displayMode`
+- `lockScreenTitlesEnabled`
+- `tapDestination`
 
 Native widgets read only this snapshot.
 
+The Flutter-to-native bridge uses MethodChannel `flowtask/widget_bridge`.
+Android also persists the latest widget-safe payload to SharedPreferences
+`FlowTaskWidget` under key `today_snapshot` so the App Widget can render outside
+the Flutter process.
+
 ## Native Targets
 
-- iOS WidgetKit home-screen and lock-screen widgets.
-- Android App Widget for home screen.
+- iOS WidgetKit home-screen and lock-screen widgets in extension bundle
+  `com.flowtask.flowtask.todaywidget`.
+- iOS widget data is shared through app group `group.com.flowtask.flowtask`.
+- Android App Widget for home screen, with provider, resources, and manifest
+  receiver under the Android app target.
 - Android lock-screen support only where the OS/device supports it.
 
-## Phase 1 Status
+## Deep Links
 
-Phase 1 includes the `widget_snapshots` table and a due-today count query. Native widgets are scheduled for Phase 8.
+Widget taps and notification/task entry points use these routes:
+
+- `flowtask://today`
+- `flowtask://add`
+- `flowtask://calendar`
+- `flowtask://task/{id}`
+
+`tapDestination` controls which supported deep link a widget tap opens.
+
+## Implementation Status
+
+The `widget_snapshots` table, due-today count query, Flutter snapshot service,
+MethodChannel bridge, Android App Widget, and iOS WidgetKit extension are
+implemented.

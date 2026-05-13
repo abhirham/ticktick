@@ -25,6 +25,8 @@ Settings control overdue recurrence behavior:
 
 A repeating task can also be persistent. Each generated occurrence may stay in Today until completed, but completing it must generate only one next occurrence.
 
-## Phase 1 Status
+## Implementation Status
 
-The schema includes recurrence fields and recurrence rule storage. The recurrence engine is scheduled for Phase 5.
+The schema, recurrence rule storage, recurrence editor, occurrence generation,
+duplicate prevention, overdue behavior settings, and recurrence engine tests are
+implemented.

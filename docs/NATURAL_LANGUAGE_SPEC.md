@@ -38,6 +38,7 @@ NaturalLanguageTaskParser.parse(input, now, timeZone, locale)
 
 Parsed metadata phrases must be removed from the saved title. For example, `Keep in today: send builder email` becomes `send builder email`.
 
-## Phase 1 Status
+## Implementation Status
 
-Phase 1 includes the database fields and app structure. The deterministic parser is scheduled for Phase 3.
+The database fields, parser interface, deterministic parser, editable parsed
+chips, warnings, and Natural Language Debug screen are implemented.

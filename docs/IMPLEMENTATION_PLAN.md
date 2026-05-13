@@ -41,6 +41,7 @@
 
 - Local notification scheduling and permissions.
 - Multiple reminders, snooze, cancel, and reschedule behavior.
+- Notification scheduling integrated with the reminder service.
 
 ## Phase 7: Calendar
 
@@ -50,9 +51,16 @@
 ## Phase 8: Today Tasks Widget
 
 - Flutter widget snapshot service.
-- iOS WidgetKit extension.
-- Android App Widget.
-- Deep links and midnight refresh.
+- MethodChannel `flowtask/widget_bridge`.
+- Android SharedPreferences `FlowTaskWidget` key `today_snapshot`.
+- Android App Widget provider, resources, and manifest receiver.
+- iOS WidgetKit extension bundle `com.flowtask.flowtask.todaywidget`.
+- iOS app group `group.com.flowtask.flowtask`.
+- Widget settings snapshot fields: `displayMode`,
+  `lockScreenTitlesEnabled`, and `tapDestination`.
+- Deep links: `flowtask://today`, `flowtask://add`,
+  `flowtask://calendar`, and `flowtask://task/{id}`.
+- Midnight refresh.
 
 ## Phase 9: Polish
 

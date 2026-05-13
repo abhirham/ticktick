@@ -24,6 +24,11 @@ Do not show:
 - Overdue tasks on today unless their due date is today
 - Persistent no-date tasks as calendar blocks
 
-## Phase 1 Status
+## Deep Link
 
-Phase 1 includes a simple date task query and starter Calendar screen. Full calendar controls are scheduled for Phase 7.
+The Calendar view is reachable through `flowtask://calendar`.
+
+## Implementation Status
+
+Month, week, day, and agenda views are implemented with calendar settings and
+task date movement.
