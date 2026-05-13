@@ -648,6 +648,25 @@ class TaskRepository {
         'true';
   }
 
+  Future<String> _readRepeatingOverdueBehavior() async {
+    final query = _db.select(
+      _db.settingsEntries,
+    )..where((entry) => entry.key.equals(SettingKeys.repeatingOverdueBehavior));
+    final entry = await query.getSingleOrNull();
+    final value =
+        entry?.value ??
+        AppDatabase.settingsDefaults[SettingKeys.repeatingOverdueBehavior]?.$1;
+    for (final option in SettingsOptions.repeatingOverdueBehaviors) {
+      if (option.value == value) {
+        return option.value;
+      }
+    }
+    return AppDatabase
+            .settingsDefaults[SettingKeys.repeatingOverdueBehavior]
+            ?.$1 ??
+        'completeOverdueAndGenerateNext';
+  }
+
   Future<void> _refreshWidgetSnapshot() async {
     await _widgetSnapshotRefresher?.call();
   }
@@ -679,11 +698,17 @@ class TaskRepository {
         : await _taskById(parentTaskId);
     final anchorDate = _taskOccurrenceDate(rootTask ?? completedTask, now);
     final currentDate = _taskOccurrenceDate(completedTask, now);
-    final nextDate = _nextOccurrenceDate(
-      rule,
-      currentDate: currentDate,
-      anchorDate: anchorDate,
-    );
+    final behavior = await _readRepeatingOverdueBehavior();
+    final skippedMissed = behavior == 'skipMissedAndGenerateNext'
+        ? _missedOccurrenceSkipDate(rule, currentDate, anchorDate, now)
+        : null;
+    final nextDate =
+        skippedMissed?.nextDate ??
+        _nextOccurrenceDate(
+          rule,
+          currentDate: currentDate,
+          anchorDate: anchorDate,
+        );
     if (nextDate == null || !_allowsOccurrenceDate(rule, nextDate)) {
       return null;
     }
@@ -701,7 +726,10 @@ class TaskRepository {
       recurrenceRuleId: recurrenceRuleId,
       parentTaskId: parentTaskId,
     );
-    if (!_allowsOccurrenceCount(rule, occurrenceCount)) {
+    if (!_allowsOccurrenceCount(
+      rule,
+      occurrenceCount + (skippedMissed?.skippedCount ?? 0),
+    )) {
       return null;
     }
 
@@ -713,6 +741,36 @@ class TaskRepository {
       nextDate: nextDate,
       now: now,
     );
+  }
+
+  _MissedOccurrenceSkip? _missedOccurrenceSkipDate(
+    RecurrenceRuleEntry rule,
+    DateTime currentDate,
+    DateTime anchorDate,
+    DateTime now,
+  ) {
+    final today = dateOnly(now);
+    if (!currentDate.isBefore(today)) {
+      return null;
+    }
+
+    var skippedCount = 0;
+    var cursor = currentDate;
+    while (true) {
+      final candidate = _nextOccurrenceDate(
+        rule,
+        currentDate: cursor,
+        anchorDate: anchorDate,
+      );
+      if (candidate == null || !_allowsOccurrenceDate(rule, candidate)) {
+        return _MissedOccurrenceSkip(null, skippedCount);
+      }
+      if (!candidate.isBefore(today)) {
+        return _MissedOccurrenceSkip(candidate, skippedCount);
+      }
+      skippedCount += 1;
+      cursor = candidate;
+    }
   }
 
   Future<TaskItem?> _openOccurrenceForDate({
@@ -1173,4 +1231,11 @@ class TaskRepository {
     ];
     return triggers.any(input.contains);
   }
+}
+
+class _MissedOccurrenceSkip {
+  const _MissedOccurrenceSkip(this.nextDate, this.skippedCount);
+
+  final DateTime? nextDate;
+  final int skippedCount;
 }

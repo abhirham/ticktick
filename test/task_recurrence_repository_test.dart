@@ -3,6 +3,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flowtask/data/local/app_database.dart';
+import 'package:flowtask/features/settings/data/settings_repository.dart';
 import 'package:flowtask/features/tasks/data/task_repository.dart';
 import 'package:flowtask/features/tasks/domain/task_draft.dart';
 import 'package:flowtask/features/tasks/domain/task_enums.dart';
@@ -47,6 +48,58 @@ void main() {
       expect(next.recurrenceRuleId, task.recurrenceRuleId);
       expect(next.recurrenceParentTaskId, task.id);
       expect(next.recurrenceOccurrenceDate, DateTime(2026, 5, 13));
+    },
+  );
+
+  test(
+    'default overdue repeat completion advances from the completed occurrence',
+    () async {
+      final task = await repository.createTask(
+        TaskDraft(
+          title: 'Overdue daily review',
+          dueDate: DateTime(2026, 5, 9),
+          repeatRule: const TaskRepeatDraft(
+            frequency: TaskRepeatFrequency.daily,
+          ),
+        ),
+      );
+
+      await repository.completeTask(task.id);
+
+      final open = await repository.watchAllOpenTasks().first;
+      final next = open.single;
+
+      expect(next.dueDate, DateTime(2026, 5, 10));
+      expect(next.recurrenceOccurrenceDate, DateTime(2026, 5, 10));
+      expect(next.recurrenceParentTaskId, task.id);
+    },
+  );
+
+  test(
+    'skip missed overdue repeat behavior creates the next non-overdue occurrence',
+    () async {
+      await SettingsRepository(database, now: () => now).setString(
+        SettingKeys.repeatingOverdueBehavior,
+        'skipMissedAndGenerateNext',
+      );
+      final task = await repository.createTask(
+        TaskDraft(
+          title: 'Skip missed daily review',
+          dueDate: DateTime(2026, 5, 9),
+          repeatRule: const TaskRepeatDraft(
+            frequency: TaskRepeatFrequency.daily,
+          ),
+        ),
+      );
+
+      await repository.completeTask(task.id);
+
+      final open = await repository.watchAllOpenTasks().first;
+      final next = open.single;
+
+      expect(next.dueDate, DateTime(2026, 5, 12));
+      expect(next.recurrenceOccurrenceDate, DateTime(2026, 5, 12));
+      expect(next.recurrenceParentTaskId, task.id);
     },
   );
 
