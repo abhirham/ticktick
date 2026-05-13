@@ -30,7 +30,7 @@
 
 ## Natural Language Entry
 
-- [ ] [in progress: codex/natural-language] Expand parser coverage for all examples in `docs/NATURAL_LANGUAGE_SPEC.md`.
+- [x] Expand parser coverage for all examples in `docs/NATURAL_LANGUAGE_SPEC.md`.
 - [ ] Add editable parsed chips for date, time, repeat, reminder, priority, list, group, and persistent.
 - [ ] Support removing parsed chips before saving.
 - [ ] Add list/group confirmation or warning behavior when parsed list/group does not exist.
