@@ -2,12 +2,12 @@
 
 ## UI And Style Guide
 
-- [ ] Do another phone pass against `style-guide.md` for Today, drawer, quick add, task detail, calendar, lists, and settings.
-- [ ] Confirm text scale, row height, card radius, icon size, and safe-area spacing match the reference screenshots on the Samsung device.
-- [ ] Capture fresh screenshots for each main screen and keep them under `build/screenshots/` for comparison.
+- [ ] [in progress: codex/phone-pass] Do another phone pass against `style-guide.md` for Today, drawer, quick add, task detail, calendar, lists, and settings.
+- [ ] [in progress: codex/phone-pass] Confirm text scale, row height, card radius, icon size, and safe-area spacing match the reference screenshots on the Samsung device.
+- [ ] [in progress: codex/phone-pass] Capture fresh screenshots for each main screen and keep them under `build/screenshots/` for comparison.
 - [ ] Fix any remaining default Material-looking controls, dialogs, inputs, pickers, or buttons.
-- [ ] Verify quick-add and task-detail sheets with the keyboard open and closed.
-- [ ] Verify long task titles, long list names, and large Android font settings do not overflow.
+- [ ] [in progress: codex/phone-pass] Verify quick-add and task-detail sheets with the keyboard open and closed.
+- [ ] [in progress: codex/phone-pass] Verify long task titles, long list names, and large Android font settings do not overflow.
 
 ## Task Basics
 
@@ -101,7 +101,7 @@
 
 ## Native Platform
 
-- [ ] Verify Android app runs cleanly on the connected Samsung phone.
+- [ ] [in progress: codex/phone-pass] Verify Android app runs cleanly on the connected Samsung phone.
 - [ ] Verify iOS app builds and launches in Simulator or on device.
 - [ ] Add iOS WidgetKit extension target under `ios/Runner/FlowTaskTodayWidget`.
 - [ ] Add Android App Widget files under `android/app/flowtask_today_widget`.
@@ -115,8 +115,8 @@
 - [ ] Add widget tests for Today, Calendar, Add Task, Task Detail, List Detail, grouped list UI, reminder editor, natural-language chips, and widget settings.
 - [ ] Add feasible native/widget tests for Android and iOS widget snapshots.
 - [ ] Add integration tests for the core acceptance flows.
-- [ ] Run `flutter analyze` before each checkpoint.
-- [ ] Run `flutter test` before each checkpoint.
+- [ ] [in progress: codex/phone-pass] Run `flutter analyze` before each checkpoint.
+- [ ] [in progress: codex/phone-pass] Run `flutter test` before each checkpoint.
 - [ ] Keep committing small checkpoints with clear messages.
 
 ## Cleanup
