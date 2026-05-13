@@ -102,6 +102,7 @@
 ## Native Platform
 
 - [x] Verify Android app runs cleanly on the connected Samsung phone.
+- [x] Keep the connected Android phone awake during QA sessions.
 - [ ] Verify iOS app builds and launches in Simulator or on device.
 - [ ] Add iOS WidgetKit extension target under `ios/Runner/FlowTaskTodayWidget`.
 - [ ] Add Android App Widget files under `android/app/flowtask_today_widget`.
