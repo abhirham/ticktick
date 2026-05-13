@@ -143,9 +143,8 @@ class FlowDrawer extends ConsumerWidget {
       backgroundColor: colors.surface,
       shape: const RoundedRectangleBorder(),
       child: SafeArea(
-        top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 24, 12, 18),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 18),
           child: Column(
             children: [
               Padding(
@@ -156,7 +155,7 @@ class FlowDrawer extends ConsumerWidget {
                       clipBehavior: Clip.none,
                       children: [
                         CircleAvatar(
-                          radius: 18,
+                          radius: 20,
                           backgroundColor: colors.primary,
                           child: Text(
                             'A',
@@ -200,15 +199,15 @@ class FlowDrawer extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Icon(Icons.search_rounded, color: colors.icon, size: 24),
-                    const SizedBox(width: 22),
+                    Icon(Icons.search_rounded, color: colors.icon, size: 28),
+                    const SizedBox(width: 18),
                     Icon(
                       Icons.notifications_none_rounded,
                       color: colors.icon,
-                      size: 24,
+                      size: 28,
                     ),
-                    const SizedBox(width: 22),
-                    Icon(Icons.hexagon_outlined, color: colors.icon, size: 24),
+                    const SizedBox(width: 18),
+                    Icon(Icons.hexagon_outlined, color: colors.icon, size: 28),
                   ],
                 ),
               ),

@@ -1311,16 +1311,18 @@ FAB:
 Drawer container:
 
 - Width: approximately `355dp`, about `86%` of the viewport.
-- Height: full app height including behind top safe area.
+- Height: full app height including behind the top safe area.
 - Fill: `--color-surface`.
 - Right edge has a dimmed outside overlay, not a bright divider.
 - No visible rounded right corners.
+- The drawer surface may fill behind the status bar, but the header content must be offset by the top safe-area inset and must never overlap status bar icons or camera/cutout areas.
 
 Drawer header:
 
 - Header height: approximately `122dp`.
 - Avatar size: approximately `40dp`.
 - Avatar x inset: approximately `21dp`.
+- Header content starts below the status bar safe area.
 - Account name sits to the right of the avatar and is bold.
 - Search, notification, and settings icons sit on the right with `30dp` to `36dp` visual icons inside large hit targets.
 - Header controls are horizontally aligned around the avatar/name row.
@@ -1757,6 +1759,7 @@ Before shipping UI intended to match TickTick, compare against this checklist:
 
 - Phone viewport uses approximately `411dp` as the reference width.
 - Safe areas are respected: app top bar below status bar, bottom nav above gesture area.
+- Drawer header content is below the status bar safe area even when the drawer surface fills the whole screen.
 - Main gutters are `16dp`.
 - Top icon hit targets are `48dp` to `56dp`.
 - Default background is pure black.
