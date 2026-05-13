@@ -11,20 +11,20 @@
 
 ## Task Basics
 
-- [ ] [in progress: codex/task-basics] Finish create, edit, complete, delete, restore, and permanently delete flows across all task screens.
-- [ ] [in progress: codex/task-basics] Make sure normal tasks can be created with title-only input.
-- [ ] [in progress: codex/task-basics] Add complete task editing for due date, due time, priority, list, group, reminder, repeat rule, and description.
-- [ ] [in progress: codex/task-basics] Add undo snackbar for common destructive actions where appropriate.
-- [ ] [in progress: codex/task-basics] Confirm completed tasks remain visible in Completed and deleted tasks remain visible in Trash.
+- [x] Finish create, edit, complete, delete, restore, and permanently delete flows across all task screens.
+- [x] Make sure normal tasks can be created with title-only input.
+- [x] Add complete task editing for due date, due time, priority, list, group, reminder, repeat rule, and description.
+- [x] Add undo snackbar for common destructive actions where appropriate.
+- [x] Confirm completed tasks remain visible in Completed and deleted tasks remain visible in Trash.
 
 ## Lists And Groups
 
-- [ ] [in progress: codex/lists-groups] Implement create, rename, delete, and reorder lists.
-- [ ] [in progress: codex/lists-groups] Implement list colors and optional list icons.
-- [ ] [in progress: codex/lists-groups] Implement create, rename, delete, collapse, expand, and reorder groups.
-- [ ] [in progress: codex/lists-groups] Implement moving tasks between groups.
+- [x] Implement create, rename, delete, and reorder lists.
+- [x] Implement list colors and optional list icons.
+- [x] Implement create, rename, delete, collapse, expand, and reorder groups.
+- [x] Implement moving tasks between groups.
 - [ ] Add the delete-group choice flow: move tasks to Ungrouped, delete tasks, or move tasks to another group.
-- [ ] Keep Ungrouped visible for every list.
+- [x] Keep Ungrouped visible for every list.
 - [ ] Add list grouping modes: manual, due date, priority, status, persistent vs normal, and none.
 - [ ] Add sorting modes inside groups: manual, due date, priority, created date, and title.
 
@@ -35,16 +35,16 @@
 - [ ] Support removing parsed chips before saving.
 - [ ] Add list/group confirmation or warning behavior when parsed list/group does not exist.
 - [ ] Finish Natural Language Debug Screen output for raw input, cleaned title, parsed metadata, and warnings.
-- [ ] Add parser tests for ambiguous dates, missing years, time without date, list/group syntax, reminders, recurrence, and persistent phrases.
+- [x] Add parser tests for ambiguous dates, missing years, time without date, list/group syntax, reminders, recurrence, and persistent phrases.
 
 ## Persistent Tasks
 
-- [ ] [in progress: codex/task-basics] Finish "Keep in Today until complete" toggle in add and detail flows.
-- [ ] [in progress: codex/task-basics] Ensure persistent no-date tasks always appear in Today while open.
-- [ ] [in progress: codex/task-basics] Show persistent badges and carried-forward labels.
-- [ ] [in progress: codex/task-basics] Implement carried-forward count updates.
-- [ ] [in progress: codex/settings] Add settings for persistent visibility, carried-forward count, and persistent task position.
-- [ ] [in progress: codex/task-basics] Test persistent tasks created yesterday, completed persistent tasks, due-date preservation, and natural-language persistent triggers.
+- [x] Finish "Keep in Today until complete" toggle in add and detail flows.
+- [x] Ensure persistent no-date tasks always appear in Today while open.
+- [x] Show persistent badges and carried-forward labels.
+- [x] Implement carried-forward count updates.
+- [x] Add settings for persistent visibility, carried-forward count, and persistent task position.
+- [x] Test persistent tasks created yesterday, completed persistent tasks, due-date preservation, and natural-language persistent triggers.
 
 ## Repeating Tasks
 
@@ -70,34 +70,34 @@
 
 ## Calendar
 
-- [ ] [in progress: codex/calendar] Finish Month, Week, Day, and Agenda views.
-- [ ] [in progress: codex/calendar] Show normal due tasks, recurrence occurrences, and persistent tasks with due dates on correct calendar dates.
-- [ ] [in progress: codex/calendar] Exclude overdue tasks from today unless due date is actually today.
-- [ ] [in progress: codex/calendar] Exclude persistent no-date tasks from calendar blocks.
-- [ ] [in progress: codex/calendar] Add date tap to create task for that date.
-- [ ] [in progress: codex/calendar] Add task move-to-date and clear-date behavior.
-- [ ] [in progress: codex/settings] Add calendar settings for first day of week, default view, and completed visibility.
-- [ ] [in progress: codex/calendar] Add calendar query tests.
+- [x] Finish Month, Week, Day, and Agenda views.
+- [x] Show normal due tasks, recurrence occurrences, and persistent tasks with due dates on correct calendar dates.
+- [x] Exclude overdue tasks from today unless due date is actually today.
+- [x] Exclude persistent no-date tasks from calendar blocks.
+- [x] Add date tap to create task for that date.
+- [x] Add task move-to-date and clear-date behavior.
+- [x] Add calendar settings for first day of week, default view, and completed visibility.
+- [x] Add calendar query tests.
 
 ## Today Widget
 
-- [ ] [in progress: codex/widget-data] Finish `WidgetDataService` summary generation.
-- [ ] [in progress: codex/widget-data] Persist widget-safe snapshots with due-today count, generated time, timezone, and next due-today task titles.
-- [ ] [in progress: codex/widget-data] Ensure widget count includes only open tasks with `dueDate == today`.
-- [ ] [in progress: codex/widget-data] Exclude overdue, completed, deleted, future, no-date, and persistent no-date tasks from widget count.
+- [x] Finish `WidgetDataService` summary generation.
+- [x] Persist widget-safe snapshots with due-today count, generated time, timezone, and next due-today task titles.
+- [x] Ensure widget count includes only open tasks with `dueDate == today`.
+- [x] Exclude overdue, completed, deleted, future, no-date, and persistent no-date tasks from widget count.
 - [ ] Implement iOS WidgetKit home-screen and lock-screen widgets.
 - [ ] Implement Android home-screen App Widget.
 - [ ] Add Android lock-screen support only where OS/device allows it.
 - [ ] Add deep links for `flowtask://today`, `flowtask://task/{id}`, and `flowtask://add`.
 - [ ] Add midnight, timezone-change, task-change, and app-open widget refresh triggers.
 - [ ] Add widget privacy settings.
-- [ ] Add widget snapshot and widget-count tests.
+- [x] Add widget snapshot and widget-count tests.
 
 ## Settings
 
-- [ ] [in progress: codex/settings] Finish settings persistence for theme, reminders, today behavior, calendar, widget, recurrence overdue behavior, default list, and default grouping.
-- [ ] [in progress: codex/settings] Confirm light, dark, and system theme modes work.
-- [ ] [in progress: codex/settings] Add settings screen tests for toggles, option rows, and persistence.
+- [x] Finish settings persistence for theme, reminders, today behavior, calendar, widget, recurrence overdue behavior, default list, and default grouping.
+- [x] Confirm light, dark, and system theme modes work.
+- [x] Add settings screen tests for toggles, option rows, and persistence.
 
 ## Native Platform
 
