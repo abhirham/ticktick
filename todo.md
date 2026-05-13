@@ -59,14 +59,14 @@
 ## Reminders And Notifications
 
 - [x] Finish reminder editor UI with multiple reminders per task.
-- [ ] [in progress: codex/main] Schedule local notifications with `flutter_local_notifications` and `timezone`.
-- [ ] [in progress: codex/main] Request and display notification permission status.
-- [ ] [in progress: codex/main] Add test notification button in settings.
-- [ ] [in progress: codex/main] Cancel reminders on complete/delete and reschedule on date/time changes.
-- [ ] [in progress: codex/main] Implement notification actions: mark complete, snooze, and open task.
-- [ ] [in progress: codex/main] Implement snooze reminders without changing due date.
-- [ ] [in progress: codex/main] Handle Android exact alarm limitations gracefully.
-- [ ] [in progress: codex/main] Add reminder scheduling, cancellation, reschedule, snooze, repeating, and persistent tests.
+- [x] Schedule local notifications with `flutter_local_notifications` and `timezone`.
+- [x] Request and display notification permission status.
+- [x] Add test notification button in settings.
+- [x] Cancel reminders on complete/delete and reschedule on date/time changes.
+- [x] Implement notification actions: mark complete, snooze, and open task.
+- [x] Implement snooze reminders without changing due date.
+- [x] Handle Android exact alarm limitations gracefully.
+- [x] Add reminder scheduling, cancellation, reschedule, snooze, repeating, and persistent tests.
 
 ## Calendar
 

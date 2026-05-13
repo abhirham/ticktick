@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers.dart';
 import '../../../app/theme.dart';
 import '../../../data/local/app_database.dart';
 import '../../tasks/application/task_providers.dart';
@@ -19,6 +20,7 @@ class SettingsScreen extends ConsumerWidget {
         ref.watch(flowTaskSettingsProvider).valueOrNull ??
         FlowTaskSettings.defaults;
     final repository = ref.read(settingsRepositoryProvider);
+    final notificationStatus = ref.watch(notificationStatusProvider);
     final lists =
         ref.watch(taskListsProvider).valueOrNull ?? const <TaskList>[];
     final defaultListOptions = _defaultListOptions(
@@ -101,6 +103,44 @@ class SettingsScreen extends ConsumerWidget {
                             '${settings.defaultReminderOffsetMinutes}',
                         options: SettingsOptions.defaultReminderOffsets,
                       ),
+                    ),
+                    _SettingsOptionRow(
+                      key: const ValueKey(
+                        'settings_option_notificationPermission',
+                      ),
+                      icon: Icons.verified_user_outlined,
+                      iconColor: const Color(0xFF13C8A0),
+                      title: 'Notification permission',
+                      value: notificationStatus.when(
+                        data: (status) => status.label,
+                        loading: () => 'Checking',
+                        error: (_, _) => 'Unavailable',
+                      ),
+                      onTap: () async {
+                        await ref
+                            .read(reminderNotificationServiceProvider)
+                            .requestPermissions();
+                        ref.invalidate(notificationStatusProvider);
+                      },
+                    ),
+                    _SettingsOptionRow(
+                      key: const ValueKey('settings_option_testNotification'),
+                      icon: Icons.notification_add_outlined,
+                      iconColor: colors.primary,
+                      title: 'Send test notification',
+                      value: '5 seconds',
+                      onTap: () async {
+                        await ref
+                            .read(reminderNotificationServiceProvider)
+                            .showTestNotification();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Test notification scheduled.'),
+                            ),
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),

@@ -14,6 +14,13 @@ import '../shared/presentation/flow_shell.dart';
 final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/today',
+    redirect: (context, state) {
+      final uri = state.uri;
+      if (uri.scheme != 'flowtask') {
+        return null;
+      }
+      return _flowTaskRouteForDeepLink(uri);
+    },
     routes: [
       ShellRoute(
         builder: (context, state, child) {
@@ -79,3 +86,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     errorBuilder: (context, state) => const TodayScreen(),
   );
 });
+
+String? _flowTaskRouteForDeepLink(Uri uri) {
+  if (uri.host == 'today' || uri.path == '/today') {
+    return '/today';
+  }
+  if (uri.host == 'add' || uri.path == '/add') {
+    return '/add';
+  }
+  if (uri.host == 'task') {
+    final taskId = uri.pathSegments.isEmpty ? null : uri.pathSegments.first;
+    return taskId == null || taskId.isEmpty ? '/today' : '/task/$taskId';
+  }
+  if (uri.pathSegments.length >= 2 && uri.pathSegments.first == 'task') {
+    return '/task/${uri.pathSegments[1]}';
+  }
+  return '/today';
+}

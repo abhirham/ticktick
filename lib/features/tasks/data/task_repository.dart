@@ -3,15 +3,25 @@ import 'package:uuid/uuid.dart';
 
 import '../../../core/time/flow_date_utils.dart';
 import '../../../data/local/app_database.dart';
+import '../../reminders/data/reminder_notification_service.dart';
+import '../../settings/data/settings_repository.dart';
 import '../domain/task_draft.dart';
 import '../domain/task_enums.dart';
 
 class TaskRepository {
-  TaskRepository(this._db, {DateTime Function()? now})
-    : _now = now ?? DateTime.now;
+  TaskRepository(
+    this._db, {
+    DateTime Function()? now,
+    TaskReminderScheduler? reminderScheduler,
+    Future<void> Function()? widgetSnapshotRefresher,
+  }) : _now = now ?? DateTime.now,
+       _reminderScheduler = reminderScheduler,
+       _widgetSnapshotRefresher = widgetSnapshotRefresher;
 
   final AppDatabase _db;
   final DateTime Function() _now;
+  final TaskReminderScheduler? _reminderScheduler;
+  final Future<void> Function()? _widgetSnapshotRefresher;
   final Uuid _uuid = const Uuid();
 
   Stream<List<TaskItem>> watchTodayTasks({
@@ -154,6 +164,10 @@ class TaskRepository {
     return query.watchSingleOrNull();
   }
 
+  Future<TaskItem?> readTask(String id) {
+    return _taskById(id);
+  }
+
   Stream<List<TaskList>> watchLists() {
     final query = _db.select(_db.taskLists)
       ..where((list) => list.isArchived.equals(false))
@@ -261,6 +275,9 @@ class TaskRepository {
       }
     });
 
+    await _syncRemindersForTask(id);
+    await _refreshWidgetSnapshot();
+
     return (_db.select(
       _db.taskItems,
     )..where((task) => task.id.equals(id))).getSingle();
@@ -292,6 +309,7 @@ class TaskRepository {
     final now = _now();
     final existing = await _taskById(id);
     final existingRuleId = existing?.recurrenceRuleId;
+    final remindersBefore = await _remindersByTaskId(id);
     final nextRuleId = updateRepeatRule && repeatRule != null
         ? existingRuleId ?? _uuid.v4()
         : null;
@@ -357,6 +375,13 @@ class TaskRepository {
         await _deleteRepeatRuleIfUnused(existingRuleId);
       }
     });
+
+    await _reminderScheduler?.cancelTaskReminders(
+      id,
+      reminders: remindersBefore,
+    );
+    await _syncRemindersForTask(id);
+    await _refreshWidgetSnapshot();
   }
 
   Future<void> moveTaskToDate({
@@ -383,6 +408,8 @@ class TaskRepository {
         updatedAt: Value(now),
       ),
     );
+    await _syncRemindersForTask(id);
+    await _refreshWidgetSnapshot();
   }
 
   Future<void> clearTaskDate(String id) async {
@@ -398,10 +425,14 @@ class TaskRepository {
         updatedAt: Value(now),
       ),
     );
+    await _syncRemindersForTask(id);
+    await _refreshWidgetSnapshot();
   }
 
   Future<void> completeTask(String id) async {
     final now = _now();
+    final remindersBefore = await _remindersByTaskId(id);
+    final nextOccurrenceIds = <String>{};
     await _db.transaction(() async {
       final task = await _taskById(id);
       if (task == null) {
@@ -423,9 +454,20 @@ class TaskRepository {
       );
 
       if (!wasCompleted) {
-        await _createOrReuseNextOccurrence(task, now);
+        final nextOccurrenceId = await _createOrReuseNextOccurrence(task, now);
+        if (nextOccurrenceId != null) {
+          nextOccurrenceIds.add(nextOccurrenceId);
+        }
       }
     });
+    await _reminderScheduler?.cancelTaskReminders(
+      id,
+      reminders: remindersBefore,
+    );
+    for (final occurrenceId in nextOccurrenceIds) {
+      await _syncRemindersForTask(occurrenceId);
+    }
+    await _refreshWidgetSnapshot();
   }
 
   Future<void> reopenTask(String id) async {
@@ -441,10 +483,13 @@ class TaskRepository {
         updatedAt: Value(now),
       ),
     );
+    await _syncRemindersForTask(id);
+    await _refreshWidgetSnapshot();
   }
 
   Future<void> moveTaskToTrash(String id) async {
     final now = _now();
+    final remindersBefore = await _remindersByTaskId(id);
     await (_db.update(
       _db.taskItems,
     )..where((task) => task.id.equals(id))).write(
@@ -454,6 +499,11 @@ class TaskRepository {
         updatedAt: Value(now),
       ),
     );
+    await _reminderScheduler?.cancelTaskReminders(
+      id,
+      reminders: remindersBefore,
+    );
+    await _refreshWidgetSnapshot();
   }
 
   Future<void> restoreTask(String id) async {
@@ -469,10 +519,13 @@ class TaskRepository {
         updatedAt: Value(now),
       ),
     );
+    await _syncRemindersForTask(id);
+    await _refreshWidgetSnapshot();
   }
 
   Future<void> permanentlyDeleteTask(String id) async {
     final task = await _taskById(id);
+    final remindersBefore = await _remindersByTaskId(id);
     await _db.transaction(() async {
       await (_db.delete(
         _db.reminderEntries,
@@ -485,6 +538,11 @@ class TaskRepository {
         await _deleteRepeatRuleIfUnused(recurrenceRuleId);
       }
     });
+    await _reminderScheduler?.cancelTaskReminders(
+      id,
+      reminders: remindersBefore,
+    );
+    await _refreshWidgetSnapshot();
   }
 
   Future<void> refreshPersistentCarryForwardCounts(DateTime today) async {
@@ -552,24 +610,66 @@ class TaskRepository {
     return query.getSingleOrNull();
   }
 
+  Future<List<ReminderEntry>> _remindersByTaskId(String taskId) {
+    final query = _db.select(_db.reminderEntries)
+      ..where((reminder) => reminder.taskId.equals(taskId));
+    return query.get();
+  }
+
+  Future<void> _syncRemindersForTask(String taskId) async {
+    final scheduler = _reminderScheduler;
+    if (scheduler == null) {
+      return;
+    }
+    final task = await _taskById(taskId);
+    final reminders = await _remindersByTaskId(taskId);
+    final remindersEnabled = await _readBoolSetting(
+      SettingKeys.remindersEnabled,
+    );
+    final shouldSchedule =
+        remindersEnabled &&
+        task != null &&
+        TaskStatus.fromValue(task.status) == TaskStatus.open &&
+        task.deletedAt == null &&
+        reminders.isNotEmpty;
+
+    if (!shouldSchedule) {
+      await scheduler.cancelTaskReminders(taskId, reminders: reminders);
+      return;
+    }
+    await scheduler.scheduleTaskReminders(task, reminders);
+  }
+
+  Future<bool> _readBoolSetting(String key) async {
+    final query = _db.select(_db.settingsEntries)
+      ..where((entry) => entry.key.equals(key));
+    final entry = await query.getSingleOrNull();
+    return (entry?.value ?? AppDatabase.settingsDefaults[key]?.$1 ?? 'false') ==
+        'true';
+  }
+
+  Future<void> _refreshWidgetSnapshot() async {
+    await _widgetSnapshotRefresher?.call();
+  }
+
   Future<RecurrenceRuleEntry?> _repeatRuleById(String id) {
     final query = _db.select(_db.recurrenceRuleEntries)
       ..where((rule) => rule.id.equals(id));
     return query.getSingleOrNull();
   }
 
-  Future<void> _createOrReuseNextOccurrence(
+  Future<String?> _createOrReuseNextOccurrence(
     TaskItem completedTask,
     DateTime now,
   ) async {
     final recurrenceRuleId = completedTask.recurrenceRuleId;
     if (recurrenceRuleId == null) {
-      return;
+      return null;
     }
 
     final rule = await _repeatRuleById(recurrenceRuleId);
     if (rule == null) {
-      return;
+      return null;
     }
 
     final parentTaskId =
@@ -585,7 +685,7 @@ class TaskRepository {
       anchorDate: anchorDate,
     );
     if (nextDate == null || !_allowsOccurrenceDate(rule, nextDate)) {
-      return;
+      return null;
     }
 
     final existingOccurrence = await _openOccurrenceForDate(
@@ -594,7 +694,7 @@ class TaskRepository {
       occurrenceDate: nextDate,
     );
     if (existingOccurrence != null) {
-      return;
+      return existingOccurrence.id;
     }
 
     final occurrenceCount = await _seriesOccurrenceCount(
@@ -602,10 +702,10 @@ class TaskRepository {
       parentTaskId: parentTaskId,
     );
     if (!_allowsOccurrenceCount(rule, occurrenceCount)) {
-      return;
+      return null;
     }
 
-    await _insertNextOccurrence(
+    return _insertNextOccurrence(
       source: completedTask,
       parentTaskId: parentTaskId,
       recurrenceRuleId: recurrenceRuleId,
@@ -652,7 +752,7 @@ class TaskRepository {
     return row.read(count) ?? 0;
   }
 
-  Future<void> _insertNextOccurrence({
+  Future<String> _insertNextOccurrence({
     required TaskItem source,
     required String parentTaskId,
     required String recurrenceRuleId,
@@ -701,6 +801,7 @@ class TaskRepository {
       dayDelta: dayDelta,
       now: now,
     );
+    return id;
   }
 
   Future<void> _copyRemindersToOccurrence({
