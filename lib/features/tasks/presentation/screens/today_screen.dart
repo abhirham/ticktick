@@ -32,12 +32,12 @@ class TodayScreen extends ConsumerWidget {
               FlowIconButton(
                 icon: Icons.tips_and_updates_outlined,
                 tooltip: 'Ideas',
-                onPressed: null,
+                onPressed: () {},
               ),
               FlowIconButton(
                 icon: Icons.more_vert_rounded,
                 tooltip: 'Today options',
-                onPressed: null,
+                onPressed: () {},
               ),
             ],
           ),

@@ -172,6 +172,13 @@ Weight behavior:
 - Dates use medium weight, enough to read as metadata but less dominant than task titles.
 - Completed content uses the same approximate size as active content but much lower contrast.
 
+Flutter calibration note:
+
+- On the audited Samsung `SM-S938W` with Android font scale `0.9`, Flutter `Text`/`TextField` logical font sizes render visually larger than the static screenshot estimates for bottom sheets.
+- Preserve the screenshot proportions over raw table values when they conflict during device checks.
+- Current FlowTask visual-match sizes: task rows `19`, section headers `19`, quick-add title input `22`, quick-add description `17`, quick-add toolbar label `17`, task-detail header/date `20`, and task-detail title `28`.
+- Keep plain bottom-sheet inputs collapsed with zero content padding; default Flutter input padding makes the quick-add sheet too tall.
+
 Line height:
 
 - Compact but readable. Use line heights about `1.2` to `1.35` for large text.

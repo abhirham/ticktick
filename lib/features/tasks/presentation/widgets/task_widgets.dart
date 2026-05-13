@@ -23,13 +23,13 @@ class FlowTaskPageHeader extends StatelessWidget {
     return SafeArea(
       bottom: false,
       child: SizedBox(
-        height: 96,
+        height: 56,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              leading ?? const SizedBox(width: 48),
-              const SizedBox(width: 10),
+              leading ?? const SizedBox(width: 56),
+              const SizedBox(width: 4),
               Expanded(
                 child: Text(
                   title,
@@ -69,13 +69,19 @@ class FlowIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
-    return IconButton(
-      tooltip: tooltip,
-      onPressed: onPressed,
-      iconSize: 32,
-      color: isActive ? colors.primary : colors.icon,
-      disabledColor: colors.textSubtle,
-      icon: Icon(icon),
+    return SizedBox(
+      width: 40,
+      height: 48,
+      child: IconButton(
+        tooltip: tooltip,
+        onPressed: onPressed,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 40, height: 48),
+        iconSize: 32,
+        color: isActive ? colors.primary : colors.icon,
+        disabledColor: colors.icon,
+        icon: Icon(icon),
+      ),
     );
   }
 }
@@ -115,7 +121,7 @@ class TaskSectionCard extends StatelessWidget {
         color: colors.surface,
         borderRadius: BorderRadius.circular(20),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -126,7 +132,7 @@ class TaskSectionCard extends StatelessWidget {
                   title,
                   style: TextStyle(
                     color: muted ? colors.textSubtle : colors.text,
-                    fontSize: 24,
+                    fontSize: 19,
                     fontWeight: FontWeight.w700,
                     height: 1.3,
                   ),
@@ -152,26 +158,26 @@ class TaskSectionCard extends StatelessWidget {
             )
           else
             Padding(
-              padding: const EdgeInsets.only(top: 24),
+              padding: const EdgeInsets.only(top: 2),
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   if (showProjectMarkers && tasks.length > 2)
                     const Positioned(
                       left: -16,
-                      top: 150,
+                      top: 112,
                       child: _ProjectMarker(height: 48),
                     ),
                   if (showProjectMarkers && tasks.length > 4)
                     const Positioned(
                       left: -16,
-                      top: 304,
+                      top: 248,
                       child: _ProjectMarker(height: 48),
                     ),
                   if (showProjectMarkers && tasks.length > 6)
                     const Positioned(
                       left: -16,
-                      bottom: 0,
+                      bottom: 10,
                       child: _ProjectMarker(height: 48),
                     ),
                   Column(
@@ -213,7 +219,7 @@ class SectionTextAction extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -247,7 +253,7 @@ class TaskRow extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 77),
+          constraints: const BoxConstraints(minHeight: 44),
           child: Row(
             children: [
               TaskCheckBox(
@@ -255,7 +261,7 @@ class TaskRow extends StatelessWidget {
                 onTap: onToggle,
                 muted: muted || isCompleted,
               ),
-              const SizedBox(width: 18),
+              const SizedBox(width: 14),
               Expanded(
                 child: Text(
                   task.title,
@@ -265,7 +271,7 @@ class TaskRow extends StatelessWidget {
                     color: muted || isCompleted
                         ? colors.textSubtle
                         : colors.text,
-                    fontSize: 25,
+                    fontSize: 19,
                     fontWeight: FontWeight.w400,
                     height: 1.28,
                   ),
@@ -274,7 +280,7 @@ class TaskRow extends StatelessWidget {
               if (metadata != null) ...[
                 const SizedBox(width: 12),
                 SizedBox(
-                  width: 112,
+                  width: 88,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -288,7 +294,7 @@ class TaskRow extends StatelessWidget {
                           color: muted
                               ? colors.textSubtle
                               : metadata.color(colors),
-                          fontSize: 20,
+                          fontSize: 14,
                           fontWeight: FontWeight.w500,
                           height: 1.2,
                         ),
@@ -298,7 +304,7 @@ class TaskRow extends StatelessWidget {
                         Icon(
                           Icons.repeat_rounded,
                           color: colors.textSubtle,
-                          size: 21,
+                          size: 16,
                         ),
                       ],
                     ],
@@ -311,7 +317,7 @@ class TaskRow extends StatelessWidget {
                   child: Icon(
                     Icons.repeat_rounded,
                     color: colors.textSubtle,
-                    size: 21,
+                    size: 16,
                   ),
                 ),
               ],
@@ -359,18 +365,18 @@ class TaskCheckBox extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 28,
-        height: 28,
+        width: 18,
+        height: 18,
         decoration: BoxDecoration(
           color: checked ? colors.textSubtle : Colors.transparent,
           borderRadius: BorderRadius.circular(6),
           border: Border.all(
             color: checked || muted ? colors.textSubtle : colors.border,
-            width: 2,
+            width: 1.5,
           ),
         ),
         child: checked
-            ? Icon(Icons.check_rounded, size: 21, color: colors.surface)
+            ? Icon(Icons.check_rounded, size: 15, color: colors.surface)
             : null,
       ),
     );
@@ -389,13 +395,13 @@ class _HeaderCount extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text('$count', style: TextStyle(color: colors.textMuted, fontSize: 22)),
+        Text('$count', style: TextStyle(color: colors.textMuted, fontSize: 16)),
         if (chevron) ...[
           const SizedBox(width: 6),
           Icon(
             Icons.keyboard_arrow_down_rounded,
             color: colors.textMuted,
-            size: 30,
+            size: 24,
           ),
         ],
       ],

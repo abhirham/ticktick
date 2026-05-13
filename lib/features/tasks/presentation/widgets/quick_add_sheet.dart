@@ -11,6 +11,7 @@ Future<void> showQuickAddSheet(BuildContext context) {
     context: context,
     isScrollControlled: true,
     useSafeArea: false,
+    useRootNavigator: true,
     barrierColor: Colors.black.withValues(alpha: 0.82),
     backgroundColor: Colors.transparent,
     builder: (context) => const QuickAddSheet(),
@@ -64,14 +65,20 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                 controller: _titleController,
                 autofocus: true,
                 cursorColor: colors.primary,
+                maxLines: 1,
                 style: TextStyle(
                   color: colors.textStrong,
-                  fontSize: 28,
+                  fontSize: 22,
                   fontWeight: FontWeight.w400,
                   height: 1.25,
                 ),
                 decoration: const InputDecoration(
                   hintText: 'What would you like to do?',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isCollapsed: true,
+                  contentPadding: EdgeInsets.zero,
                 ),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _save(),
@@ -80,17 +87,25 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
               TextField(
                 controller: _descriptionController,
                 cursorColor: colors.primary,
+                maxLines: 1,
                 style: TextStyle(
                   color: colors.text,
-                  fontSize: 22,
+                  fontSize: 17,
                   fontWeight: FontWeight.w400,
                   height: 1.25,
                 ),
-                decoration: const InputDecoration(hintText: 'Description'),
+                decoration: const InputDecoration(
+                  hintText: 'Description',
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  isCollapsed: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _save(),
               ),
-              const SizedBox(height: 44),
+              const SizedBox(height: 28),
               Row(
                 children: [
                   _ToolbarAction(
@@ -166,7 +181,7 @@ class _ToolbarAction extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontSize: 20,
+              fontSize: 17,
               fontWeight: FontWeight.w500,
             ),
           ),

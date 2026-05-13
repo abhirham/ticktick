@@ -17,6 +17,34 @@ class FlowTaskApp extends ConsumerWidget {
       theme: buildFlowTaskTheme(Brightness.light),
       darkTheme: buildFlowTaskTheme(Brightness.dark),
       routerConfig: router,
+      builder: (context, child) {
+        return ScrollConfiguration(
+          behavior: const _FlowTaskScrollBehavior(),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
+  }
+}
+
+class _FlowTaskScrollBehavior extends MaterialScrollBehavior {
+  const _FlowTaskScrollBehavior();
+
+  @override
+  Widget buildScrollbar(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child;
+  }
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    return child;
   }
 }
