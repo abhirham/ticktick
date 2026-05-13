@@ -6,8 +6,8 @@
 - [x] Confirm text scale, row height, card radius, icon size, and safe-area spacing match the reference screenshots on the Samsung device.
 - [x] Capture fresh screenshots for each main screen and keep them under `build/screenshots/` for comparison.
 - [ ] Fix any remaining default Material-looking controls, dialogs, inputs, pickers, or buttons.
-- [ ] [in progress: codex/phone-smoke] Verify quick-add and task-detail sheets with the keyboard open and closed.
-- [ ] [in progress: codex/phone-smoke] Verify long task titles, long list names, and large Android font settings do not overflow.
+- [x] Verify quick-add and task-detail sheets with the keyboard open and closed.
+- [ ] [in progress: codex/phone-smoke] Verify long list names and large Android font settings do not overflow.
 
 ## Task Basics
 
@@ -52,7 +52,7 @@
 - [x] Implement next occurrence generation when a repeating task is completed.
 - [x] Prevent duplicate future occurrences.
 - [x] Support daily, weekly, monthly, yearly, custom intervals, weekdays, weekends, selected weekdays, last Friday, and every other Saturday.
-- [ ] [in progress: codex/main] Implement overdue repeating behavior setting.
+- [x] Implement overdue repeating behavior setting.
 - [x] Verify persistent plus repeating tasks do not duplicate.
 - [x] Add recurrence engine tests for all supported patterns.
 
@@ -85,12 +85,12 @@
 - [x] Persist widget-safe snapshots with due-today count, generated time, timezone, and next due-today task titles.
 - [x] Ensure widget count includes only open tasks with `dueDate == today`.
 - [x] Exclude overdue, completed, deleted, future, no-date, and persistent no-date tasks from widget count.
-- [ ] [in progress: codex/native] Implement iOS WidgetKit home-screen and lock-screen widgets.
-- [ ] [in progress: codex/native] Implement Android home-screen App Widget.
-- [ ] [in progress: codex/native] Add Android lock-screen support only where OS/device allows it.
-- [ ] [in progress: codex/native] Add deep links for `flowtask://today`, `flowtask://task/{id}`, and `flowtask://add`.
-- [ ] [in progress: codex/native] Add midnight, timezone-change, task-change, and app-open widget refresh triggers.
-- [ ] [in progress: codex/native] Add widget privacy settings.
+- [x] Implement iOS WidgetKit home-screen and lock-screen widgets.
+- [x] Implement Android home-screen App Widget.
+- [x] Add Android lock-screen support only where OS/device allows it.
+- [x] Add deep links for `flowtask://today`, `flowtask://task/{id}`, and `flowtask://add`.
+- [x] Add midnight, timezone-change, task-change, and app-open widget refresh triggers.
+- [x] Add widget privacy settings.
 - [x] Add widget snapshot and widget-count tests.
 
 ## Settings
@@ -103,11 +103,11 @@
 
 - [x] Verify Android app runs cleanly on the connected Samsung phone.
 - [x] Keep the connected Android phone awake during QA sessions.
-- [ ] [in progress: codex/native] Verify iOS app builds and launches in Simulator or on device.
-- [ ] [in progress: codex/native] Add iOS WidgetKit extension target under `ios/Runner/FlowTaskTodayWidget`.
-- [ ] [in progress: codex/native] Add Android App Widget files under `android/app/flowtask_today_widget`.
-- [ ] [in progress: codex/native] Confirm native widgets read the shared widget data bridge.
-- [ ] [in progress: codex/native] Confirm app icons, labels, launch theme, and permissions are production-ready.
+- [x] Verify iOS app builds and launches in Simulator or on device.
+- [x] Add iOS WidgetKit extension target under `ios/Runner/FlowTaskTodayWidget`.
+- [x] Add Android App Widget files under `android/app/src/main`.
+- [x] Confirm native widgets read the shared widget data bridge.
+- [x] Confirm app icons, labels, launch theme, and permissions are production-ready.
 
 ## Tests And QA
 

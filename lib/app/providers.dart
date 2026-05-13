@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/local/app_database.dart';
 import '../features/reminders/data/reminder_notification_service.dart';
 import '../features/tasks/data/task_repository.dart';
+import '../features/widget/data/native_widget_bridge.dart';
 import '../features/widget/data/widget_data_service.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -12,7 +13,10 @@ final appDatabaseProvider = Provider<AppDatabase>((ref) {
 });
 
 final widgetDataServiceProvider = Provider<WidgetDataService>((ref) {
-  return WidgetDataService(ref.watch(appDatabaseProvider));
+  return WidgetDataService(
+    ref.watch(appDatabaseProvider),
+    nativeBridge: const NativeWidgetBridge(),
+  );
 });
 
 final reminderNotificationServiceProvider =

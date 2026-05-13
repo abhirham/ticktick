@@ -4,8 +4,10 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flowtask/data/local/app_database.dart';
+import 'package:flowtask/features/settings/data/settings_repository.dart';
 import 'package:flowtask/features/tasks/data/task_repository.dart';
 import 'package:flowtask/features/tasks/domain/task_draft.dart';
+import 'package:flowtask/features/widget/data/native_widget_bridge.dart';
 import 'package:flowtask/features/widget/data/widget_data_service.dart';
 
 void main() {
@@ -103,4 +105,60 @@ void main() {
     expect(summary.dueTodayCount, 2);
     expect(summary.nextDueTodayTasks, ['First due today', 'Second due today']);
   });
+
+  test('publishes snapshots to native widgets with privacy settings', () async {
+    final bridge = _RecordingNativeWidgetBridge();
+    final settingsRepository = SettingsRepository(database, now: () => now);
+    service = WidgetDataService(
+      database,
+      now: () => now,
+      timeZoneName: () => 'America/Toronto',
+      nativeBridge: bridge,
+    );
+    await settingsRepository.setString(
+      SettingKeys.widgetDisplayMode,
+      'countAndTitles',
+    );
+    await settingsRepository.setBool(
+      SettingKeys.widgetShowsLockScreenTitles,
+      true,
+    );
+    await settingsRepository.setString(
+      SettingKeys.widgetTapDestination,
+      'calendar',
+    );
+    await taskRepository.createTask(
+      TaskDraft(title: 'Widget-visible task', dueDate: now, dueTime: '08:00'),
+    );
+
+    await service.refreshTodaySnapshot();
+
+    expect(bridge.publishedSummary?.dueTodayCount, 1);
+    expect(bridge.publishedSummary?.nextDueTodayTasks, ['Widget-visible task']);
+    expect(bridge.displayMode, 'countAndTitles');
+    expect(bridge.lockScreenTitlesEnabled, isTrue);
+    expect(bridge.tapDestination, 'calendar');
+  });
+}
+
+class _RecordingNativeWidgetBridge extends NativeWidgetBridge {
+  _RecordingNativeWidgetBridge();
+
+  WidgetDataSummary? publishedSummary;
+  String? displayMode;
+  bool? lockScreenTitlesEnabled;
+  String? tapDestination;
+
+  @override
+  Future<void> publishTodaySnapshot(
+    WidgetDataSummary summary, {
+    required String displayMode,
+    required bool lockScreenTitlesEnabled,
+    required String tapDestination,
+  }) async {
+    publishedSummary = summary;
+    this.displayMode = displayMode;
+    this.lockScreenTitlesEnabled = lockScreenTitlesEnabled;
+    this.tapDestination = tapDestination;
+  }
 }

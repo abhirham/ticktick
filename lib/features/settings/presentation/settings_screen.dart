@@ -338,10 +338,15 @@ class SettingsScreen extends ConsumerWidget {
                       iconColor: const Color(0xFFF7B43B),
                       title: 'Show titles on lock screen',
                       value: settings.widgetShowsLockScreenTitles,
-                      onChanged: (value) => repository.setBool(
-                        SettingKeys.widgetShowsLockScreenTitles,
-                        value,
-                      ),
+                      onChanged: (value) async {
+                        await repository.setBool(
+                          SettingKeys.widgetShowsLockScreenTitles,
+                          value,
+                        );
+                        await ref
+                            .read(widgetDataServiceProvider)
+                            .refreshTodaySnapshot();
+                      },
                     ),
                     _SettingsOptionRow(
                       key: const ValueKey(
@@ -463,7 +468,14 @@ class SettingsScreen extends ConsumerWidget {
           onSelected: (value) {
             return ref
                 .read(settingsRepositoryProvider)
-                .setString(settingKey, value);
+                .setString(settingKey, value)
+                .then((_) async {
+                  if (settingKey.startsWith('widget')) {
+                    await ref
+                        .read(widgetDataServiceProvider)
+                        .refreshTodaySnapshot();
+                  }
+                });
           },
         );
       },

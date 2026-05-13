@@ -4,7 +4,9 @@ import 'package:drift/drift.dart';
 
 import '../../../core/time/flow_date_utils.dart';
 import '../../../data/local/app_database.dart';
+import '../../settings/data/settings_repository.dart';
 import '../../tasks/domain/task_enums.dart';
+import 'native_widget_bridge.dart';
 
 class WidgetDataSummary {
   WidgetDataSummary({
@@ -41,8 +43,10 @@ class WidgetDataService {
     this._db, {
     DateTime Function()? now,
     String Function()? timeZoneName,
+    NativeWidgetBridge? nativeBridge,
   }) : _now = now ?? DateTime.now,
-       _timeZoneName = timeZoneName;
+       _timeZoneName = timeZoneName,
+       _nativeBridge = nativeBridge;
 
   static const todaySnapshotId = 'today_count_bubble';
   static const defaultMaxTaskTitles = 3;
@@ -50,6 +54,7 @@ class WidgetDataService {
   final AppDatabase _db;
   final DateTime Function() _now;
   final String Function()? _timeZoneName;
+  final NativeWidgetBridge? _nativeBridge;
 
   Future<WidgetDataSummary> generateTodaySummary({
     DateTime? today,
@@ -92,7 +97,9 @@ class WidgetDataService {
           ),
         );
 
-    return (await readTodaySnapshot())!;
+    final snapshot = (await readTodaySnapshot())!;
+    await _publishNativeSnapshot(WidgetDataSummary.fromSnapshot(snapshot));
+    return snapshot;
   }
 
   Future<WidgetSnapshotEntry?> readTodaySnapshot() {
@@ -135,5 +142,24 @@ class WidgetDataService {
         task.completedAt.isNull() &
         task.deletedAt.isNull() &
         task.dueDate.equals(day);
+  }
+
+  Future<void> _publishNativeSnapshot(WidgetDataSummary summary) async {
+    final bridge = _nativeBridge;
+    if (bridge == null) {
+      return;
+    }
+    final settings = await _readWidgetSettings();
+    await bridge.publishTodaySnapshot(
+      summary,
+      displayMode: settings.widgetDisplayMode,
+      lockScreenTitlesEnabled: settings.widgetShowsLockScreenTitles,
+      tapDestination: settings.widgetTapDestination,
+    );
+  }
+
+  Future<FlowTaskSettings> _readWidgetSettings() async {
+    final entries = await _db.select(_db.settingsEntries).get();
+    return FlowTaskSettings.fromEntries(entries);
   }
 }

@@ -94,6 +94,9 @@ String? _flowTaskRouteForDeepLink(Uri uri) {
   if (uri.host == 'add' || uri.path == '/add') {
     return '/add';
   }
+  if (uri.host == 'calendar' || uri.path == '/calendar') {
+    return '/calendar';
+  }
   if (uri.host == 'task') {
     final taskId = uri.pathSegments.isEmpty ? null : uri.pathSegments.first;
     return taskId == null || taskId.isEmpty ? '/today' : '/task/$taskId';
